@@ -1,0 +1,13 @@
+{
+  "git_commit_guidelines": {
+    "specification": "Conventional Commits",
+    "language": "pt-BR",
+    "rules": [
+      "Primeira linha em minúsculo, limite de 60 caracteres.",
+      "Verbo inicial obrigatoriamente no imperativo (ex: adicionar, corrigir, alterar).",
+      "Escopos recomendados para este projeto: api, db, webhook, auth, config, extension.",
+      "Commits devem ser estritamente atômicos.",
+      "Se houver Breaking Changes, incluir 'BREAKING CHANGE:' no rodapé com a explicação da migração."
+    ]
+  }
+}
