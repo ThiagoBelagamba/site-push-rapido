@@ -1,0 +1,14 @@
+{
+  "name": "site-push-rapido",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @push-rapido/web",
+    "build": "npm run build -w @push-rapido/web",
+    "start": "npm run start -w @push-rapido/web"
+  }
+}
