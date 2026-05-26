@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { api, clearToken, isLoggedIn } from "@/lib/api";
+import { api, clearToken, getSelectedSiteId, isLoggedIn, setSelectedSiteId } from "@/lib/api";
 
 const INTEGRAR_PREFIX = "/integrar";
 const CAMPANHAS_PREFIX = "/campanhas";
+const SITES_PREFIX = "/sites";
 const CODIGO_INTEGRACAO_PATH = "/integrar/codigo";
 
 export default function ProtectedGate({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,7 @@ export default function ProtectedGate({ children }: { children: React.ReactNode 
 
   const isIntegrarRoute = pathname.startsWith(INTEGRAR_PREFIX);
   const isCampanhasRoute = pathname.startsWith(CAMPANHAS_PREFIX);
+  const isSitesRoute = pathname.startsWith(SITES_PREFIX);
 
   useEffect(() => {
     setMounted(true);
@@ -30,7 +32,7 @@ export default function ProtectedGate({ children }: { children: React.ReactNode 
       return;
     }
 
-    if (isIntegrarRoute) {
+    if (isIntegrarRoute || isSitesRoute) {
       setAccessAllowed(true);
       setChecking(false);
       return;
@@ -42,7 +44,22 @@ export default function ProtectedGate({ children }: { children: React.ReactNode 
       setAccessAllowed(false);
 
       try {
-        const site = await api.getSite();
+        const sitesRes = await api.getSites();
+        if (cancelled) return;
+
+        if (!sitesRes.sites.length) {
+          router.replace("/sites");
+          return;
+        }
+
+        const storedSiteId = getSelectedSiteId();
+        const selectedSite =
+          sitesRes.sites.find((site) => String(site.id) === storedSiteId) ?? sitesRes.sites[0];
+        if (!storedSiteId || String(selectedSite.id) !== storedSiteId) {
+          setSelectedSiteId(selectedSite.id);
+        }
+
+        const site = await api.getSite(selectedSite.id);
         if (cancelled) return;
 
         if (!site.configurado) {
@@ -79,13 +96,13 @@ export default function ProtectedGate({ children }: { children: React.ReactNode 
     return () => {
       cancelled = true;
     };
-  }, [mounted, pathname, router, isIntegrarRoute, isCampanhasRoute]);
+  }, [mounted, pathname, router, isIntegrarRoute, isCampanhasRoute, isSitesRoute]);
 
   if (!mounted || checking) {
     return <div className="loading">Carregando...</div>;
   }
 
-  if (!isIntegrarRoute && !accessAllowed) {
+  if (!isIntegrarRoute && !isSitesRoute && !accessAllowed) {
     return <div className="loading">Carregando...</div>;
   }
 

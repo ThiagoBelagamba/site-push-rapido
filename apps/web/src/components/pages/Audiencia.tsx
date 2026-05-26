@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Filter, Globe, Monitor, Search, Smartphone, Users } from "lucide-react";
 import { api, Metrics, Subscription, parseApiError } from "@/lib/api";
+import { useSiteContext } from "@/components/SiteProvider";
 
 function truncate(s: string, n = 48) {
   return s.length > n ? s.slice(0, n) + "…" : s;
@@ -22,6 +23,7 @@ function inferDeviceLabel(userAgent?: string) {
 }
 
 export default function Audiencia() {
+  const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,14 @@ export default function Audiencia() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   const refresh = useCallback(async () => {
+    if (!selectedSiteId) {
+      setMetrics(null);
+      setSubscriptions([]);
+      setMessage("");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const results = await Promise.allSettled([
       api.getMetrics(),
       api.getSubscriptions(),
@@ -42,7 +52,7 @@ export default function Audiencia() {
       setMessage(parseApiError(failed.reason));
     }
     setLoading(false);
-  }, []);
+  }, [selectedSiteId]);
 
   useEffect(() => {
     refresh();
@@ -78,7 +88,17 @@ export default function Audiencia() {
     });
   }, [subscriptions, query, statusFilter]);
 
-  if (loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (!selectedSiteId) {
+    return (
+      <div className="page">
+        <div className="banner-warn">
+          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para escolher o site que será
+          usado na audiência.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page animate-in fade-in">
@@ -90,6 +110,9 @@ export default function Audiencia() {
             <p className="page-desc">
               Pesquise endpoints, separe inscrições ativas e acompanhe a saúde da sua audiência com
               uma leitura mais clara para a operação do dia a dia.
+            </p>
+            <p className="hint" style={{ marginTop: 12 }}>
+              Site ativo: <strong>{selectedSite?.nome ?? "Selecionado"}</strong>
             </p>
           </div>
           <div className="hero-badges">

@@ -3,8 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertCircle, Bell, CheckCircle2, ChevronRight, Home, LogOut, Menu, Send, Settings, Users, X } from "lucide-react";
+import {
+  AlertCircle,
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  Globe,
+  Home,
+  LogOut,
+  Menu,
+  Send,
+  Settings,
+  Users,
+  X,
+} from "lucide-react";
 import { api, clearToken } from "@/lib/api";
+import { useSiteContext } from "@/components/SiteProvider";
 import "../app/layout-dashboard.css";
 
 const navGroups = [
@@ -28,6 +42,7 @@ const navGroups = [
   {
     title: "Configurações",
     items: [
+      { href: "/sites", label: "Sites", exact: true, icon: Globe },
       { href: "/integrar", label: "Configuração Web", exact: false, icon: Settings },
     ],
   },
@@ -36,6 +51,7 @@ const navGroups = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { sites, selectedSite, selectedSiteId, selectSite, loading: sitesLoading } = useSiteContext();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [statusLabel, setStatusLabel] = useState("Verificando configuração");
   const [statusTone, setStatusTone] = useState<"ready" | "pending" | "error">("pending");
@@ -69,13 +85,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     let cancelled = false;
 
+    if (!selectedSiteId) {
+      setStatusTone("pending");
+      setStatusLabel("Selecione ou cadastre um site");
+      return () => {
+        cancelled = true;
+      };
+    }
+
     api
       .getSetupStatus()
       .then((setup) => {
         if (cancelled) return;
         if (setup.ready) {
           setStatusTone("ready");
-          setStatusLabel("Integração pronta para campanhas");
+          setStatusLabel(`Integração pronta: ${selectedSite?.nome ?? "site ativo"}`);
           return;
         }
 
@@ -94,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectedSite?.nome, selectedSiteId]);
 
   const StatusIcon = statusTone === "ready" ? CheckCircle2 : AlertCircle;
 
@@ -155,6 +179,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
         <div className="sidebar-footer">
+          <div className="sidebar-status">
+            <span>{sitesLoading ? "Carregando sites..." : "Site ativo"}</span>
+            <select
+              value={selectedSiteId ?? ""}
+              onChange={(e) => selectSite(e.target.value || null)}
+              disabled={sitesLoading || sites.length === 0}
+              style={{ width: "100%", marginTop: 8 }}
+            >
+              {sites.length === 0 ? <option value="">Nenhum site</option> : null}
+              {sites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.nome}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className={`sidebar-status sidebar-status-${statusTone}`}>
             <StatusIcon size={16} />
             <span>{statusLabel}</span>
@@ -177,7 +217,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <div className="main-topbar-copy">
             <span>Painel administrativo</span>
-            <strong>{currentSection}</strong>
+            <strong>
+              {currentSection}
+              {selectedSite ? ` · ${selectedSite.nome}` : ""}
+            </strong>
           </div>
         </div>
         {children}

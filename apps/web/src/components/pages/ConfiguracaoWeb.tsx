@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Bell, CheckCircle2, Copy, Download, Globe, Settings, UploadCloud } from "lucide-react";
 import { api, PromptConfig, SetupStatus, SiteConfig, SnippetResponse, parseApiError } from "@/lib/api";
+import { useSiteContext } from "@/components/SiteProvider";
 
 type SettingsTab = "setup" | "prompt" | "install";
 
@@ -35,6 +36,7 @@ function snippetHelpMessage(err: unknown): string {
 }
 
 export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?: SettingsTab }) {
+  const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -108,6 +110,12 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
   }, []);
 
   const refresh = useCallback(async () => {
+    if (!selectedSiteId) {
+      setSnippet(null);
+      setSetup(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const results = await Promise.allSettled([api.getSite(), api.getSetupStatus(), api.getSnippet()]);
     const [siteRes, setupRes, snippetRes] = results;
@@ -136,7 +144,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     }
 
     setLoading(false);
-  }, [applySite]);
+  }, [applySite, selectedSiteId]);
 
   useEffect(() => {
     void refresh();
@@ -251,7 +259,22 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     if (ok) router.push("/campanhas");
   }
 
-  if (loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (!selectedSiteId) {
+    return (
+      <div className="page">
+        <div className="banner-warn">
+          Nenhum site selecionado. Abra a tela de Sites para criar ou escolher o site que será
+          configurado.
+        </div>
+        <div className="form-actions">
+          <button type="button" className="btn btn-primary" onClick={() => router.push("/sites")}>
+            Abrir Sites
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page animate-in fade-in">
@@ -262,6 +285,9 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
           <p className="page-desc">
             Configure domínio, prompt de permissão e instalação do SDK com uma interface mais direta e
             parecida com um console de administração.
+          </p>
+          <p className="hint" style={{ marginTop: 12 }}>
+            Site ativo: <strong>{selectedSite?.nome ?? nome}</strong>
           </p>
         </div>
         <div className="settings-header-actions">

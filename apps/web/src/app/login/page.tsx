@@ -3,10 +3,18 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, Bell } from "lucide-react";
-import { api, clearToken, isLoggedIn, setToken } from "@/lib/api";
+import { api, clearToken, getSelectedSiteId, isLoggedIn, setSelectedSiteId, setToken } from "@/lib/api";
 
 async function resolveLandingRoute(): Promise<string> {
-  const site = await api.getSite();
+  const sitesRes = await api.getSites();
+  if (!sitesRes.sites.length) return "/sites";
+
+  const storedSiteId = getSelectedSiteId();
+  const selectedSite =
+    sitesRes.sites.find((site) => String(site.id) === storedSiteId) ?? sitesRes.sites[0];
+  setSelectedSiteId(selectedSite.id);
+
+  const site = await api.getSite(selectedSite.id);
   if (!site.configurado) return "/integrar";
 
   const setup = await api.getSetupStatus();

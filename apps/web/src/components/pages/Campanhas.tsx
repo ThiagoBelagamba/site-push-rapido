@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { api, Campaign, Metrics, ServicesHealth, SiteConfig, STATUS_LABELS, parseApiError } from "@/lib/api";
+import { useSiteContext } from "@/components/SiteProvider";
 
 function statusLabel(status: string) {
   return STATUS_LABELS[status] ?? status;
@@ -50,6 +51,7 @@ function campaignTone(status: string) {
 }
 
 export default function Campanhas() {
+  const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,6 +93,15 @@ export default function Campanhas() {
   }, [site?.icone_padrao_url, site?.url_origem]);
 
   const refresh = useCallback(async () => {
+    if (!selectedSiteId) {
+      setMetrics(null);
+      setCampaigns([]);
+      setSite(null);
+      setHealth(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const results = await Promise.allSettled([
       api.getMetrics(),
       api.getCampaigns(),
@@ -125,7 +136,7 @@ export default function Campanhas() {
       showMsg(first.status === "rejected" ? parseApiError(first.reason) : "Erro ao carregar", "err");
     }
     setLoading(false);
-  }, [iconeUrl, urlDestino]);
+  }, [iconeUrl, selectedSiteId, urlDestino]);
 
   useEffect(() => {
     refresh();
@@ -137,6 +148,12 @@ export default function Campanhas() {
     }, 10000);
     return () => clearInterval(interval);
   }, [isComposer, refresh]);
+
+  useEffect(() => {
+    if (!editQueryId) {
+      resetForm();
+    }
+  }, [editQueryId, resetForm, selectedSiteId]);
 
   useEffect(() => {
     if (!isComposer) return;
@@ -268,7 +285,17 @@ export default function Campanhas() {
     router.push("/campanhas");
   }
 
-  if (loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (!selectedSiteId) {
+    return (
+      <div className="page">
+        <div className="banner-warn">
+          Nenhum site selecionado. Abra <a href="/sites">Sites</a> para escolher o site que receberá
+          as campanhas.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page animate-in fade-in">
@@ -290,6 +317,9 @@ export default function Campanhas() {
                 <p className="page-desc">
                   Organize rascunhos, valide testes e acompanhe campanhas enviadas com uma operação
                   mais clara em desktop e mobile.
+                </p>
+                <p className="hint" style={{ marginTop: 12 }}>
+                  Site ativo: <strong>{selectedSite?.nome ?? site?.nome ?? "Selecionado"}</strong>
                 </p>
               </div>
               <div className="hero-badges">
@@ -495,6 +525,9 @@ export default function Campanhas() {
                   Monte o conteúdo, valide o destino do clique e salve o rascunho antes de testar ou
                   enviar para a base ativa.
                 </p>
+                <p className="hint" style={{ marginTop: 12 }}>
+                  Site ativo: <strong>{selectedSite?.nome ?? site?.nome ?? "Selecionado"}</strong>
+                </p>
               </div>
               <div className="hero-badges">
                 <div className="hero-chip light">
@@ -525,7 +558,10 @@ export default function Campanhas() {
                     <div className="audience-pill-dot" />
                     <div>
                       <p>Enviar para usuários ativos</p>
-                      <span>Aproximadamente {formatNumber(activeCount)} destinatários</span>
+                      <span>
+                        Aproximadamente {formatNumber(activeCount)} destinatários em{" "}
+                        {selectedSite?.nome ?? site?.nome ?? "site ativo"}
+                      </span>
                     </div>
                   </div>
                 </div>

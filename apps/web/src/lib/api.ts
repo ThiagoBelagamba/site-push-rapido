@@ -7,17 +7,35 @@ export function getApiBase(): string {
   return "http://localhost:3000";
 }
 
+const TOKEN_KEY = "pr_token";
+const SITE_KEY = "pr_site_id";
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("pr_token");
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getSelectedSiteId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(SITE_KEY);
+}
+
+export function setSelectedSiteId(siteId: string | number) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SITE_KEY, String(siteId));
+}
+
+export function clearSelectedSiteId() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(SITE_KEY);
 }
 
 export function setToken(token: string) {
-  localStorage.setItem("pr_token", token);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken() {
-  localStorage.removeItem("pr_token");
+  localStorage.removeItem(TOKEN_KEY);
 }
 
 export function isLoggedIn(): boolean {
@@ -50,8 +68,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getApiBase()}${path.startsWith("/api") ? path : `/api${path}`}`;
   const hasBody =
     options?.body !== undefined && options?.body !== null && options.body !== "";
+  const selectedSiteId = getSelectedSiteId();
   const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(selectedSiteId ? { "X-Site-Id": selectedSiteId } : {}),
     ...((options?.headers as Record<string, string> | undefined) ?? {}),
   };
   if (hasBody) {
@@ -111,6 +131,7 @@ export interface Metrics {
 
 export interface Campaign {
   id: string;
+  site_id?: number;
   titulo: string;
   mensagem: string;
   url_destino: string;
@@ -136,10 +157,21 @@ export interface PromptConfig {
   autoPromptDelayMs: number;
 }
 
-export interface SiteConfig {
+export interface SiteSummary {
+  id: number;
+  slug: string;
   nome: string;
   url_origem: string;
-  icone_padrao_url: string;
+  configurado: boolean;
+  ativo: boolean;
+  active_subscriptions?: number;
+  campaign_count?: number;
+}
+
+export interface SiteConfig extends SiteSummary {
+  nome: string;
+  url_origem: string;
+  icone_padrao_url: string | null;
   prompt_config: PromptConfig;
   configurado: boolean;
   auto_resubscribe: boolean;
@@ -150,6 +182,7 @@ export interface SiteConfig {
   welcome_enabled?: boolean;
   welcome_titulo?: string;
   welcome_mensagem?: string;
+  vapid_public_key?: string;
 }
 
 export interface SnippetResponse {
@@ -185,6 +218,7 @@ export interface SetupStatus {
 
 export interface Subscription {
   id: string;
+  site_id: number;
   endpoint: string;
   provider: string;
   status: string;
@@ -201,6 +235,27 @@ export const STATUS_LABELS: Record<string, string> = {
   skipped: "Ignorada",
 };
 
+export interface SiteInput {
+  nome: string;
+  url_origem: string;
+  slug?: string;
+  icone_padrao_url?: string | null;
+  prompt_config?: PromptConfig;
+  configurado?: boolean;
+  auto_resubscribe?: boolean;
+  allow_localhost_http?: boolean;
+  service_worker_path?: string;
+  service_worker_scope?: string;
+  welcome_enabled?: boolean;
+  welcome_titulo?: string;
+  welcome_mensagem?: string;
+  ativo?: boolean;
+}
+
+function sitePath(siteId: string | number | undefined, suffix = ""): string {
+  return siteId ? `/v1/sites/${siteId}${suffix}` : `/v1/site${suffix}`;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<{ token: string; email: string }>("/v1/auth/login", {
@@ -210,24 +265,40 @@ export const api = {
 
   me: () => request<{ email: string }>("/v1/auth/me"),
 
-  getSite: () => request<SiteConfig>("/v1/site"),
+  getSites: () => request<{ sites: SiteSummary[]; selected_site_id: number | null }>("/v1/sites"),
 
-  updateSite: (body: Partial<SiteConfig> & { configurado?: boolean }) =>
-    request<SiteConfig>("/v1/site", {
+  createSite: (body: SiteInput) =>
+    request<SiteConfig>("/v1/sites", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  getSite: (siteId?: string | number) => request<SiteConfig>(sitePath(siteId)),
+
+  updateSite: (body: SiteInput, siteId?: string | number) =>
+    request<SiteConfig>(sitePath(siteId), {
       method: "PUT",
       body: JSON.stringify(body),
     }),
 
-  uploadIcon: async (file: File): Promise<{ icone_padrao_url: string }> => {
+  uploadIcon: async (
+    file: File,
+    siteId?: string | number
+  ): Promise<{ icone_padrao_url: string }> => {
     const token = getToken();
-    const url = `${getApiBase()}/api/v1/site/icon`;
+    const selectedSiteId = getSelectedSiteId();
+    const headers: Record<string, string> = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(selectedSiteId ? { "X-Site-Id": selectedSiteId } : {}),
+    };
+    const url = `${getApiBase()}/api${sitePath(siteId, "/icon")}`;
     const form = new FormData();
     form.append("file", file);
     let res: Response;
     try {
       res = await fetch(url, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers,
         body: form,
       });
     } catch (err) {
@@ -244,17 +315,22 @@ export const api = {
     return res.json();
   },
 
-  getSnippet: () => request<SnippetResponse>("/v1/site/snippet"),
+  getSnippet: (siteId?: string | number) => request<SnippetResponse>(sitePath(siteId, "/snippet")),
 
-  getSetupStatus: () => request<SetupStatus>("/v1/site/setup-status"),
+  getSetupStatus: (siteId?: string | number) =>
+    request<SetupStatus>(sitePath(siteId, "/setup-status")),
 
   getServicesHealth: async (): Promise<ServicesHealth> => {
     const token = getToken();
+    const selectedSiteId = getSelectedSiteId();
     const url = `${getApiBase()}/api/v1/health/services`;
     let res: Response;
     try {
       res = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(selectedSiteId ? { "X-Site-Id": selectedSiteId } : {}),
+        },
       });
     } catch (err) {
       if (err instanceof TypeError) {

@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { api, Metrics, ServicesHealth, SetupStatus, parseApiError } from "@/lib/api";
+import { useSiteContext } from "@/components/SiteProvider";
 
 function formatNumber(value: number | undefined) {
   return new Intl.NumberFormat("pt-BR").format(value ?? 0);
@@ -50,6 +51,7 @@ function MetricCard({
 }
 
 export default function Home() {
+  const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [setup, setSetup] = useState<SetupStatus | null>(null);
   const [health, setHealth] = useState<ServicesHealth | null>(null);
@@ -57,6 +59,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!selectedSiteId) {
+      setMetrics(null);
+      setSetup(null);
+      setHealth(null);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     Promise.allSettled([api.getMetrics(), api.getSetupStatus(), api.getServicesHealth()]).then((results) => {
       const [mRes, sRes, hRes] = results;
       if (mRes.status === "fulfilled") setMetrics(mRes.value);
@@ -74,9 +86,19 @@ export default function Home() {
       }
       setLoading(false);
     });
-  }, []);
+  }, [selectedSiteId]);
 
-  if (loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (!selectedSiteId) {
+    return (
+      <div className="page">
+        <div className="banner-warn">
+          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para criar ou escolher o site
+          que ficará ativo no painel.
+        </div>
+      </div>
+    );
+  }
 
   const completedChecks = setup?.items.filter((item) => item.ok).length ?? 0;
   const totalChecks = setup?.items.length ?? 0;
@@ -146,6 +168,9 @@ export default function Home() {
             <h2 className="page-title">{primaryAction.title}</h2>
             <p className="page-desc">
               {primaryAction.description}
+            </p>
+            <p className="hint" style={{ marginTop: 12 }}>
+              Site ativo: <strong>{selectedSite?.nome ?? "Selecionado"}</strong>
             </p>
           </div>
           <div className="hero-badges">
