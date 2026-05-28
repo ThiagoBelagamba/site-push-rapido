@@ -2,11 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Bell, CheckCircle2, Copy, Download, Globe, Settings, UploadCloud } from "lucide-react";
+import {
+  Bell,
+  CheckCircle2,
+  Copy,
+  Download,
+  Globe,
+  Settings,
+  Smartphone,
+  UploadCloud,
+} from "lucide-react";
 import { api, PromptConfig, SetupStatus, SiteConfig, SnippetResponse, parseApiError } from "@/lib/api";
 import { useSiteContext } from "@/components/SiteProvider";
 
-type SettingsTab = "setup" | "prompt" | "install";
+type SettingsTab = "setup" | "prompt" | "install" | "devices";
 
 const LEGACY_PROMPT_MESSAGE = "Receba alertas importantes direto no seu navegador.";
 const PERSONALIZED_PROMPT_MESSAGE =
@@ -20,7 +29,33 @@ const defaultPrompt: PromptConfig = {
   },
   bell: { tooltip: "Gerenciar notificações" },
   autoPromptDelayMs: 3000,
+  mobile: {
+    iosInstallTitle: "Instale na Tela de Início (iPhone)",
+    iosInstallSteps:
+      "Abra este site no Safari.\nToque em Compartilhar.\nEscolha \"Adicionar à Tela de Início\".\nAbra pelo ícone na tela inicial e permita notificações.",
+    unsupportedBrowserMessage:
+      "No iPhone, use o Safari e adicione o site à Tela de Início. O Chrome no iPhone não suporta notificações push.",
+  },
 };
+
+function SlidedownPreview({ prompt, compact }: { prompt: PromptConfig; compact?: boolean }) {
+  return (
+    <div className={`preview-box${compact ? " preview-box-mobile" : ""}`}>
+      <strong>Preview do soft prompt</strong>
+      <div className="pr-slidedown-preview">
+        <p>{prompt.slidedown.actionMessage}</p>
+        <div className="preview-actions">
+          <button type="button" className="btn btn-sm">
+            {prompt.slidedown.cancelButton}
+          </button>
+          <button type="button" className="btn btn-sm btn-primary">
+            {prompt.slidedown.acceptButton}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function copyText(text: string) {
   return navigator.clipboard.writeText(text);
@@ -67,6 +102,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
   const [swPath, setSwPath] = useState("/push/sw.js");
   const [swScope, setSwScope] = useState("/push/");
   const [configurado, setConfigurado] = useState(false);
+  const [mobileTested, setMobileTested] = useState(false);
 
   useEffect(() => {
     const queryTab = searchParams.get("aba");
@@ -76,6 +112,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     }
     if (queryTab === "prompt") {
       setActiveTab("prompt");
+      return;
+    }
+    if (queryTab === "dispositivos") {
+      setActiveTab("devices");
       return;
     }
     setActiveTab(initialTab);
@@ -107,6 +147,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     setSwPath(site.service_worker_path || "/push/sw.js");
     setSwScope(site.service_worker_scope || "/push/");
     setConfigurado(!!site.configurado);
+    setMobileTested(!!site.mobile_tested);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -166,6 +207,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
       router.push("/integrar?aba=prompt");
       return;
     }
+    if (tab === "devices") {
+      router.push("/integrar?aba=dispositivos");
+      return;
+    }
     router.push("/integrar");
   }
 
@@ -182,11 +227,13 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
       welcome_enabled: welcomeEnabled,
       welcome_titulo: welcomeTitulo,
       welcome_mensagem: welcomeMensagem,
+      mobile_tested: mobileTested,
     }),
     [
       allowLocalhost,
       autoResubscribe,
       iconeUrl,
+      mobileTested,
       nome,
       prompt,
       swPath,
@@ -197,6 +244,8 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
       welcomeTitulo,
     ]
   );
+
+  const httpsOk = /^https:\/\//i.test(urlOrigem) || /^http:\/\/(localhost|127\.0\.0\.1)/i.test(urlOrigem);
 
   async function save(
     partial?: Partial<SiteConfig> & { configurado?: boolean },
@@ -280,11 +329,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     <div className="page animate-in fade-in">
       <header className="page-header-simple settings-header-flat">
         <div>
-          <span className="eyebrow">Settings</span>
-          <h1 className="page-title">Web Configuration</h1>
+          <span className="eyebrow">Configuração</span>
+          <h1 className="page-title">Configuração Web</h1>
           <p className="page-desc">
-            Configure domínio, prompt de permissão e instalação do SDK com uma interface mais direta e
-            parecida com um console de administração.
+            Configure domínio, prompt de permissão, instalação do SDK e testes em Android e iPhone.
           </p>
           <p className="hint" style={{ marginTop: 12 }}>
             Site ativo: <strong>{selectedSite?.nome ?? nome}</strong>
@@ -348,6 +396,19 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 <div className="settings-choice-copy">
                   <strong>Código personalizado</strong>
                   <span>Baixe o service worker e copie o snippet do SDK para instalar manualmente no site.</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => goToTab("devices")}
+                className={`settings-choice-card${activeTab === "devices" ? " active" : ""}`}
+              >
+                <div className="settings-choice-icon">
+                  <Smartphone size={18} />
+                </div>
+                <div className="settings-choice-copy">
+                  <strong>Dispositivos móveis</strong>
+                  <span>Guias para Android (HTTPS) e iPhone (Safari + Tela de Início).</span>
                 </div>
               </button>
             </div>
@@ -484,12 +545,62 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
             </section>
           ) : null}
 
+          {activeTab === "devices" ? (
+            <section className="settings-section-shell">
+              <div className="settings-section-label">Testes em dispositivos</div>
+              <div className="settings-grid-two">
+                <div className="settings-block">
+                  <h3>Android (Chrome)</h3>
+                  <ul className="checklist checklist-plain">
+                    <li>O site deve estar em <strong>HTTPS</strong> no celular (HTTP só funciona em localhost no PC).</li>
+                    <li>Peça ao usuário tocar em <strong>Permitir</strong> no soft prompt; evite depender só do prompt automático.</li>
+                    <li>Se aparecer &quot;este site não pode pedir permissões&quot;, desative o prompt automático e use o sino.</li>
+                    <li>Se bloqueou antes: cadeado do Chrome → Configurações do site → Notificações → Permitir.</li>
+                  </ul>
+                </div>
+                <div className="settings-block">
+                  <h3>iPhone (Safari + PWA)</h3>
+                  <ul className="checklist checklist-plain">
+                    <li><strong>Chrome no iPhone não suporta</strong> push web — use o Safari.</li>
+                    <li>Safari → Compartilhar → Adicionar à Tela de Início.</li>
+                    <li>Abra o site pelo ícone na tela inicial e permita notificações.</li>
+                    <li>Requer iOS 16.4 ou superior.</li>
+                  </ul>
+                </div>
+              </div>
+              {urlOrigem ? (
+                <div className="settings-block">
+                  <h3>Abrir site para teste</h3>
+                  <p className="hint">Use o mesmo domínio configurado no painel.</p>
+                  <div className="deploy-url">
+                    <a href={urlOrigem} target="_blank" rel="noreferrer">
+                      {urlOrigem}
+                    </a>
+                  </div>
+                </div>
+              ) : null}
+              <label className="checkbox settings-checkbox">
+                <input
+                  type="checkbox"
+                  checked={mobileTested}
+                  onChange={(e) => setMobileTested(e.target.checked)}
+                />
+                <span>Marquei que testei a inscrição em um celular (Android ou iPhone PWA)</span>
+              </label>
+              <div className="settings-actions">
+                <button type="button" className="btn btn-primary" onClick={() => void save(undefined, "Status mobile salvo.")} disabled={saving}>
+                  {saving ? "Salvando..." : "Salvar status de teste"}
+                </button>
+              </div>
+            </section>
+          ) : null}
+
           {activeTab === "prompt" ? (
             <section className="settings-section-shell">
               <div className="settings-section-label">3. Prompt de permissão</div>
               <div className="warn">
-                O formato do prompt nativo varia por navegador. Aqui você define o texto do soft
-                prompt exibido antes da permissão nativa.
+                O formato do prompt nativo varia por navegador. No celular, o usuário precisa tocar em
+                Permitir. Em Android, prefira desligar o prompt automático se o Chrome bloquear permissões.
               </div>
 
               <label className="checkbox settings-checkbox">
@@ -576,6 +687,45 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 />
               </div>
 
+              <div className="settings-grid-two">
+                <SlidedownPreview prompt={prompt} />
+                <SlidedownPreview prompt={prompt} compact />
+              </div>
+
+              <div className="settings-block">
+                <h3>Mensagens para iPhone (SDK)</h3>
+                <p className="hint">Exibidas quando o visitante usa Chrome no iOS ou Safari sem PWA.</p>
+                <textarea
+                  rows={2}
+                  value={prompt.mobile?.unsupportedBrowserMessage ?? ""}
+                  onChange={(e) =>
+                    setPrompt((current) => ({
+                      ...current,
+                      mobile: {
+                        ...current.mobile,
+                        unsupportedBrowserMessage: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder={defaultPrompt.mobile?.unsupportedBrowserMessage}
+                />
+                <textarea
+                  rows={4}
+                  style={{ marginTop: 12 }}
+                  value={prompt.mobile?.iosInstallSteps ?? ""}
+                  onChange={(e) =>
+                    setPrompt((current) => ({
+                      ...current,
+                      mobile: {
+                        ...current.mobile,
+                        iosInstallSteps: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Uma linha por passo (use Enter entre passos)"
+                />
+              </div>
+
               <div className="settings-actions">
                 <button type="button" className="btn btn-primary" onClick={() => void save(undefined, "Prompts atualizados.")} disabled={saving}>
                   {saving ? "Salvando..." : "Salvar prompts"}
@@ -619,6 +769,34 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                     ))}
                   </ul>
                 </section>
+              ) : null}
+
+              {snippet?.instructions?.length ? (
+                <section className="settings-block">
+                  <h3>Instruções de instalação</h3>
+                  <ul className="checklist checklist-plain">
+                    {snippet.instructions.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              <div className="settings-grid-two">
+                <div className="settings-block">
+                  <h3>Caminho do Service Worker</h3>
+                  <input value={swPath} onChange={(e) => setSwPath(e.target.value)} placeholder="/push/sw.js" />
+                </div>
+                <div className="settings-block">
+                  <h3>Escopo do Service Worker</h3>
+                  <input value={swScope} onChange={(e) => setSwScope(e.target.value)} placeholder="/push/" />
+                </div>
+              </div>
+
+              {!httpsOk && urlOrigem ? (
+                <div className="warn">
+                  A URL do site não está em HTTPS. Push no celular Android exige HTTPS em produção.
+                </div>
               ) : null}
 
               <section className="settings-block">

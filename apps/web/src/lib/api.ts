@@ -147,6 +147,12 @@ export interface Campaign {
   finalizado_em?: string;
 }
 
+export interface PromptMobileConfig {
+  iosInstallTitle?: string;
+  iosInstallSteps?: string;
+  unsupportedBrowserMessage?: string;
+}
+
 export interface PromptConfig {
   slidedown: {
     actionMessage: string;
@@ -155,6 +161,7 @@ export interface PromptConfig {
   };
   bell: { tooltip: string };
   autoPromptDelayMs: number;
+  mobile?: PromptMobileConfig;
 }
 
 export interface SiteSummary {
@@ -182,6 +189,7 @@ export interface SiteConfig extends SiteSummary {
   welcome_enabled?: boolean;
   welcome_titulo?: string;
   welcome_mensagem?: string;
+  mobile_tested?: boolean;
   vapid_public_key?: string;
 }
 
@@ -241,6 +249,7 @@ export interface SiteInput {
   slug?: string;
   icone_padrao_url?: string | null;
   prompt_config?: PromptConfig;
+  mobile_tested?: boolean;
   configurado?: boolean;
   auto_resubscribe?: boolean;
   allow_localhost_http?: boolean;
@@ -386,4 +395,27 @@ export const api = {
 
   getSubscriptions: () =>
     request<{ subscriptions: Subscription[] }>("/v1/subscriptions"),
+
+  deleteSubscription: (id: string) =>
+    request<{ deleted: boolean; id: string }>(`/v1/subscriptions/${id}`, {
+      method: "DELETE",
+    }),
+
+  purgeSubscriptions: (scope: "inactive" | "all") =>
+    request<{ deleted_count: number; scope: string }>("/v1/subscriptions/purge", {
+      method: "POST",
+      body: JSON.stringify({ scope }),
+    }),
+
+  reactivateSubscription: (id: string) =>
+    request<{ id: string; status: string; reactivated: boolean }>(
+      `/v1/subscriptions/${id}/reactivate`,
+      { method: "POST", body: "{}" }
+    ),
+
+  reactivateSubscriptionsBulk: () =>
+    request<{ reactivated_count: number }>("/v1/subscriptions/reactivate-bulk", {
+      method: "POST",
+      body: "{}",
+    }),
 };

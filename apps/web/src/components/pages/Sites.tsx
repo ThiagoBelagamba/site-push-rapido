@@ -148,10 +148,19 @@ export default function Sites() {
             <span>Novo site</span>
           </button>
           {activeSite ? (
-            <button type="button" className="btn btn-ghost" onClick={() => router.push("/integrar")}>
-              <Settings size={16} />
-              <span>Abrir configuração</span>
-            </button>
+            <>
+              <button type="button" className="btn btn-ghost" onClick={() => router.push("/integrar")}>
+                <Settings size={16} />
+                <span>Abrir configuração</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => router.push("/integrar?aba=dispositivos")}
+              >
+                <span>Testar no celular</span>
+              </button>
+            </>
           ) : null}
         </div>
       </section>
@@ -190,6 +199,7 @@ export default function Sites() {
                     <span>{site.url_origem}</span>
                     <span>
                       {site.active_subscriptions ?? 0} inscritos ativos · {site.campaign_count ?? 0} campanhas
+                      {!/^https:\/\//i.test(site.url_origem) ? " · HTTPS pendente" : ""}
                     </span>
                     <em>{active ? "Site ativo" : "Selecionar este site"}</em>
                   </button>

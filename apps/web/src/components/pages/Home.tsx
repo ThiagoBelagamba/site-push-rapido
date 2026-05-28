@@ -116,8 +116,8 @@ export default function Home() {
           "Conclua a configuração do site e a instalação do código para começar a captar inscritos e enviar campanhas com segurança.",
         ctaHref: "/integrar",
         ctaLabel: "Concluir integração",
-        secondaryHref: "/integrar/codigo",
-        secondaryLabel: "Ver instalação do código",
+        secondaryHref: "/integrar?aba=dispositivos",
+        secondaryLabel: "Testar no celular",
       };
     }
 
@@ -127,10 +127,10 @@ export default function Home() {
         title: "Capte os primeiros inscritos ativos",
         description:
           "Seu painel já está pronto, mas ainda não há usuários ativos para receber campanhas. Valide o script no site e teste o fluxo de permissão.",
-        ctaHref: "/integrar/codigo",
-        ctaLabel: "Revisar instalação",
-        secondaryHref: "/audiencia",
-        secondaryLabel: "Abrir audiência",
+        ctaHref: "/integrar?aba=dispositivos",
+        ctaLabel: "Testar no celular",
+        secondaryHref: "/integrar/codigo",
+        secondaryLabel: "Revisar instalação",
       };
     }
 

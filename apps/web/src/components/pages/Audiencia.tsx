@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Filter, Globe, Monitor, Search, Smartphone, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  Filter,
+  Globe,
+  Monitor,
+  Search,
+  Smartphone,
+  RotateCcw,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { api, Metrics, Subscription, parseApiError } from "@/lib/api";
 import { useSiteContext } from "@/components/SiteProvider";
 
@@ -22,14 +32,33 @@ function inferDeviceLabel(userAgent?: string) {
   return "Desktop";
 }
 
+function formatProviderLabel(provider: string) {
+  if (provider === "apple") return "Apple (iOS/PWA)";
+  if (provider === "google") return "Google (FCM)";
+  if (provider === "mozilla") return "Mozilla";
+  return provider;
+}
+
+function formatStatusLabel(status: string) {
+  if (status === "active") return "Ativo";
+  if (status === "unregistered") return "Revogado";
+  return "Inativo";
+}
+
 export default function Audiencia() {
   const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"ok" | "err">("ok");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+  const [purging, setPurging] = useState<"inactive" | "all" | null>(null);
+  const [reactivatingBulk, setReactivatingBulk] = useState(false);
+  const actionBusy = !!removingId || !!reactivatingId || !!purging || reactivatingBulk;
 
   const refresh = useCallback(async () => {
     if (!selectedSiteId) {
@@ -40,16 +69,14 @@ export default function Audiencia() {
       return;
     }
     setLoading(true);
-    const results = await Promise.allSettled([
-      api.getMetrics(),
-      api.getSubscriptions(),
-    ]);
+    const results = await Promise.allSettled([api.getMetrics(), api.getSubscriptions()]);
     const [mRes, sRes] = results;
     if (mRes.status === "fulfilled") setMetrics(mRes.value);
     if (sRes.status === "fulfilled") setSubscriptions(sRes.value.subscriptions);
     const failed = results.find((r) => r.status === "rejected");
     if (failed?.status === "rejected") {
       setMessage(parseApiError(failed.reason));
+      setMessageType("err");
     }
     setLoading(false);
   }, [selectedSiteId]);
@@ -63,6 +90,7 @@ export default function Audiencia() {
     }, 12000);
     return () => clearInterval(interval);
   }, [refresh]);
+
   const active = subscriptions.filter((s) => s.status === "active").length;
   const inactive = subscriptions.filter((s) => s.status !== "active").length;
   const filteredSubscriptions = useMemo(() => {
@@ -88,6 +116,121 @@ export default function Audiencia() {
     });
   }, [subscriptions, query, statusFilter]);
 
+  async function handleDelete(subscription: Subscription) {
+    const ok = confirm(
+      "Remover esta inscrição do painel?\n\nO dispositivo deixa de fazer parte da base de envio. Para inscrever de novo, o usuário precisa permitir notificações outra vez no site."
+    );
+    if (!ok) return;
+
+    setRemovingId(subscription.id);
+    setMessage("");
+    try {
+      await api.deleteSubscription(subscription.id);
+      setMessage("Inscrição removida.");
+      setMessageType("ok");
+      await refresh();
+    } catch (err) {
+      setMessage(parseApiError(err));
+      setMessageType("err");
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
+  async function handleReactivate(subscription: Subscription) {
+    const ok = confirm(
+      "Reativar esta inscrição?\n\nEla voltará a receber campanhas. Se o push falhar de novo, o worker pode marcar como inativa outra vez."
+    );
+    if (!ok) return;
+
+    setReactivatingId(subscription.id);
+    setMessage("");
+    try {
+      await api.reactivateSubscription(subscription.id);
+      setMessage("Inscrição reativada.");
+      setMessageType("ok");
+      await refresh();
+    } catch (err) {
+      setMessage(parseApiError(err));
+      setMessageType("err");
+    } finally {
+      setReactivatingId(null);
+    }
+  }
+
+  async function handleReactivateBulk() {
+    if (inactive === 0) {
+      setMessage("Não há inscrições inativas para reativar.");
+      setMessageType("err");
+      return;
+    }
+
+    const siteName = selectedSite?.nome ?? "este site";
+    if (!confirm(`Reativar ${inactive} inscrição(ões) inativa(s) de "${siteName}"?`)) return;
+
+    setReactivatingBulk(true);
+    setMessage("");
+    try {
+      const res = await api.reactivateSubscriptionsBulk();
+      setMessage(
+        res.reactivated_count === 1
+          ? "1 inscrição reativada."
+          : `${res.reactivated_count} inscrições reativadas.`
+      );
+      setMessageType("ok");
+      await refresh();
+    } catch (err) {
+      setMessage(parseApiError(err));
+      setMessageType("err");
+    } finally {
+      setReactivatingBulk(false);
+    }
+  }
+
+  async function handlePurge(scope: "inactive" | "all") {
+    const count = scope === "inactive" ? inactive : subscriptions.length;
+    if (count === 0) {
+      setMessage(scope === "inactive" ? "Não há inscrições inativas para remover." : "Não há inscrições para remover.");
+      setMessageType("err");
+      return;
+    }
+
+    const siteName = selectedSite?.nome ?? "este site";
+    const firstMessage =
+      scope === "inactive"
+        ? `Remover ${count} inscrição(ões) inativa(s) de "${siteName}"?`
+        : `Remover TODAS as ${count} inscrições de "${siteName}"?\n\nIsso apaga a base inteira e não pode ser desfeito.`;
+
+    if (!confirm(firstMessage)) return;
+
+    if (scope === "all") {
+      const typed = prompt(`Digite REMOVER para confirmar a exclusão de todas as inscrições:`);
+      if (typed?.trim().toUpperCase() !== "REMOVER") {
+        setMessage("Confirmação cancelada.");
+        setMessageType("err");
+        return;
+      }
+    }
+
+    setPurging(scope);
+    setMessage("");
+    try {
+      const res = await api.purgeSubscriptions(scope);
+      setMessage(
+        res.deleted_count === 1
+          ? "1 inscrição removida."
+          : `${res.deleted_count} inscrições removidas.`
+      );
+      setMessageType("ok");
+      await refresh();
+    } catch (err) {
+      setMessage(parseApiError(err));
+      setMessageType("err");
+    } finally {
+      setPurging(null);
+    }
+  }
+
   if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
   if (!selectedSiteId) {
     return (
@@ -108,8 +251,7 @@ export default function Audiencia() {
             <span className="eyebrow">Audiência</span>
             <h2 className="page-title">Base de usuários inscritos</h2>
             <p className="page-desc">
-              Pesquise endpoints, separe inscrições ativas e acompanhe a saúde da sua audiência com
-              uma leitura mais clara para a operação do dia a dia.
+              Pesquise endpoints, remova testes e gerencie quem recebe campanhas neste site.
             </p>
             <p className="hint" style={{ marginTop: 12 }}>
               Site ativo: <strong>{selectedSite?.nome ?? "Selecionado"}</strong>
@@ -138,7 +280,9 @@ export default function Audiencia() {
         </div>
       </section>
 
-      {message && <div className="toast toast-error">{message}</div>}
+      {message ? (
+        <div className={`toast ${messageType === "err" ? "toast-error" : ""}`}>{message}</div>
+      ) : null}
 
       <section className="metrics">
         <div className="metric-card">
@@ -185,9 +329,41 @@ export default function Audiencia() {
           <Users size={20} />
           <div className="section-heading-text">
             <h3>Inscrições</h3>
-            <p>Busca rápida por endpoint, provider ou user-agent.</p>
+            <p>Busca, remoção individual ou limpeza em lote (inativos ou todas).</p>
           </div>
         </div>
+
+        {subscriptions.length > 0 ? (
+          <div className="audience-bulk-actions">
+            <button
+              type="button"
+              className="btn btn-success btn-sm"
+              disabled={actionBusy || inactive === 0}
+              onClick={() => void handleReactivateBulk()}
+            >
+              <RotateCcw size={14} />
+              <span>{reactivatingBulk ? "Reativando..." : `Reativar inativos (${inactive})`}</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={actionBusy || inactive === 0}
+              onClick={() => void handlePurge("inactive")}
+            >
+              <Trash2 size={14} />
+              <span>{purging === "inactive" ? "Removendo..." : `Remover inativos (${inactive})`}</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-sm"
+              disabled={actionBusy}
+              onClick={() => void handlePurge("all")}
+            >
+              <Trash2 size={14} />
+              <span>{purging === "all" ? "Removendo..." : `Remover todas (${subscriptions.length})`}</span>
+            </button>
+          </div>
+        ) : null}
 
         <div className="toolbar">
           <div className="toolbar-search">
@@ -228,7 +404,7 @@ export default function Audiencia() {
         </div>
 
         {filteredSubscriptions.length === 0 ? (
-          <p className="empty">Nenhuma inscrição registrada ainda.</p>
+          <p className="empty">Nenhuma inscrição encontrada com os filtros atuais.</p>
         ) : (
           <>
             <div className="audience-desktop-table">
@@ -240,23 +416,27 @@ export default function Audiencia() {
                     <th>Endpoint</th>
                     <th>Dispositivo</th>
                     <th>Desde</th>
+                    <th aria-label="Ações" />
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSubscriptions.map((s) => {
                     const device = inferDeviceLabel(s.user_agent);
                     const DeviceIcon = device === "Desktop" ? Monitor : Smartphone;
+                    const isRemoving = removingId === s.id;
+                    const isReactivating = reactivatingId === s.id;
+                    const isInactive = s.status !== "active";
                     return (
                       <tr key={s.id}>
                         <td>
                           <div className="device-pill">
                             <Globe size={14} />
-                            <span>{s.provider}</span>
+                            <span>{formatProviderLabel(s.provider)}</span>
                           </div>
                         </td>
                         <td>
                           <span className={`badge badge-${s.status === "active" ? "finished" : "draft"}`}>
-                            {s.status === "active" ? "Ativo" : "Inativo"}
+                            {formatStatusLabel(s.status)}
                           </span>
                         </td>
                         <td className="endpoint-cell" title={s.endpoint}>
@@ -269,6 +449,30 @@ export default function Audiencia() {
                           </div>
                         </td>
                         <td>{new Date(s.criado_em).toLocaleString("pt-BR")}</td>
+                        <td className="table-actions">
+                          {isInactive ? (
+                            <button
+                              type="button"
+                              className="btn btn-success btn-sm btn-icon-only"
+                              title="Reativar inscrição"
+                              disabled={actionBusy}
+                              onClick={() => void handleReactivate(s)}
+                            >
+                              <RotateCcw size={14} />
+                              <span className="sr-only">{isReactivating ? "Reativando" : "Reativar"}</span>
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm btn-icon-only"
+                            title="Remover inscrição"
+                            disabled={actionBusy}
+                            onClick={() => void handleDelete(s)}
+                          >
+                            <Trash2 size={14} />
+                            <span className="sr-only">{isRemoving ? "Removendo" : "Remover"}</span>
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -280,15 +484,18 @@ export default function Audiencia() {
               {filteredSubscriptions.map((s) => {
                 const device = inferDeviceLabel(s.user_agent);
                 const DeviceIcon = device === "Desktop" ? Monitor : Smartphone;
+                const isRemoving = removingId === s.id;
+                const isReactivating = reactivatingId === s.id;
+                const isInactive = s.status !== "active";
                 return (
                   <article key={s.id} className="audience-card">
                     <div className="audience-card-top">
                       <div className="device-pill">
                         <Globe size={14} />
-                        <span>{s.provider}</span>
+                        <span>{formatProviderLabel(s.provider)}</span>
                       </div>
                       <span className={`badge badge-${s.status === "active" ? "finished" : "draft"}`}>
-                        {s.status === "active" ? "Ativo" : "Inativo"}
+                        {formatStatusLabel(s.status)}
                       </span>
                     </div>
                     <div className="audience-card-row">
@@ -301,6 +508,28 @@ export default function Audiencia() {
                         <span>{device}</span>
                       </div>
                       <span className="table-muted">{new Date(s.criado_em).toLocaleString("pt-BR")}</span>
+                    </div>
+                    <div className="audience-card-actions">
+                      {isInactive ? (
+                        <button
+                          type="button"
+                          className="btn btn-success btn-sm"
+                          disabled={actionBusy}
+                          onClick={() => void handleReactivate(s)}
+                        >
+                          <RotateCcw size={14} />
+                          <span>{isReactivating ? "Reativando..." : "Reativar"}</span>
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        disabled={actionBusy}
+                        onClick={() => void handleDelete(s)}
+                      >
+                        <Trash2 size={14} />
+                        <span>{isRemoving ? "Removendo..." : "Remover"}</span>
+                      </button>
                     </div>
                   </article>
                 );
