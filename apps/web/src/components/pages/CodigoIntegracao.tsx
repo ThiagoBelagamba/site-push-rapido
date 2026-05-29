@@ -132,7 +132,8 @@ export default function CodigoIntegracao() {
         </p>
         <p className="hint">
           Recomendado: subpasta dedicada (ex: <code>/push/</code>) para não conflitar com PWA.
-          Veja a{" "}
+          Após atualizar a integração, <strong>republique o service worker</strong> no site (Safari/iPhone
+          exigem a versão mais recente). Veja a{" "}
           <a
             href="https://documentation.onesignal.com/docs/en/onesignal-service-worker"
             target="_blank"
@@ -170,7 +171,8 @@ export default function CodigoIntegracao() {
         </div>
         <p>
           Cole este trecho na seção <strong>&lt;head&gt;</strong> de todas as páginas em que o
-          usuário pode se inscrever (
+          usuário pode se inscrever. O snippet já inclui o <code>manifest.json</code> exigido no
+          iPhone (
           <a
             href="https://documentation.onesignal.com/docs/en/web-push-setup"
             target="_blank"
@@ -180,6 +182,11 @@ export default function CodigoIntegracao() {
           </a>
           ).
         </p>
+        {snippet.manifest_url ? (
+          <p className="hint">
+            Manifest PWA: <code>{snippet.manifest_url}</code>
+          </p>
+        ) : null}
         <pre className="code-block">{snippet.snippet_html}</pre>
         <button
           type="button"

@@ -453,7 +453,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
 
                   <div className="settings-block">
                     <h3>Ícone da notificação</h3>
-                    <p>Envie um ícone ou use uma URL pública já disponível.</p>
+                    <p>
+                      Envie um ícone ou use uma URL pública já disponível. Para Safari (Mac) e iPhone,
+                      use <strong>PNG 256×256 em HTTPS</strong> — SVG não é exibido nas notificações Apple.
+                    </p>
                     <div className="icon-upload-row">
                       <label className="btn btn-ghost settings-upload-button">
                         <UploadCloud size={16} />
@@ -562,9 +565,19 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                   <h3>iPhone (Safari + PWA)</h3>
                   <ul className="checklist checklist-plain">
                     <li><strong>Chrome no iPhone não suporta</strong> push web — use o Safari.</li>
+                    <li>O snippet inclui <code>manifest.json</code> (obrigatório no iOS 16.4+).</li>
                     <li>Safari → Compartilhar → Adicionar à Tela de Início.</li>
                     <li>Abra o site pelo ícone na tela inicial e permita notificações.</li>
                     <li>Requer iOS 16.4 ou superior.</li>
+                    <li>Após atualizar o service worker no painel, republique o <code>sw.js</code> no site.</li>
+                  </ul>
+                </div>
+                <div className="settings-block">
+                  <h3>Mac (Safari)</h3>
+                  <ul className="checklist checklist-plain">
+                    <li>Use ícone PNG em HTTPS (não SVG).</li>
+                    <li>Confira Safari → Ajustes → Sites → Notificações.</li>
+                    <li>Se a campanha aparece como entregue mas não visível, inspecione o console do service worker.</li>
                   </ul>
                 </div>
               </div>
@@ -801,7 +814,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
 
               <section className="settings-block">
                 <h3>1. Baixar o Service Worker</h3>
-                <p>Baixe o arquivo abaixo e publique-o na raiz ou subpasta correta do seu servidor web.</p>
+                <p>
+                  Baixe o arquivo abaixo e publique-o na raiz ou subpasta correta do seu servidor web.
+                  Republique após cada atualização da API (obrigatório para Safari/iPhone).
+                </p>
                 {snippet ? (
                   <>
                     <div className="deploy-url">
@@ -833,7 +849,15 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
 
               <section className="settings-block">
                 <h3>2. Adicionar o script do SDK</h3>
-                <p>Copie e cole este código no arquivo HTML principal do seu site, dentro da tag &lt;head&gt;.</p>
+                <p>
+                  Copie e cole este código no arquivo HTML principal do seu site, dentro da tag &lt;head&gt;.
+                  O snippet inclui o manifest PWA exigido no iPhone.
+                </p>
+                {snippet?.manifest_url ? (
+                  <p className="hint">
+                    Manifest: <code>{snippet.manifest_url}</code>
+                  </p>
+                ) : null}
                 {snippet ? (
                   <>
                     <pre className="code-block">{snippet.snippet_html}</pre>

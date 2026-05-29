@@ -195,6 +195,7 @@ export interface SiteConfig extends SiteSummary {
 
 export interface SnippetResponse {
   api_public_url: string;
+  manifest_url?: string;
   service_worker_deploy_url: string;
   service_worker_filename: string;
   service_worker_scope: string;
