@@ -32,11 +32,15 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 
 ### 3. Subir o site
 
+Na **raiz** do repositório `site-push-rapido` (não dentro de `apps/web`):
+
 ```bash
 npm run dev
 ```
 
 O painel ficará disponível em `http://localhost:3001`.
+
+> Se aparecer `ENOWORKSPACES` ao rodar `next` dentro de `apps/web`, use sempre `npm run dev` na raiz. O script já aponta o Next para `apps/web` sem acionar o bug do npm 11 com workspaces.
 
 ## Build
 
@@ -65,6 +69,8 @@ Configuração recomendada:
 - se o painel não conectar, confira `NEXT_PUBLIC_API_URL`
 - se a tela travar após login, valide se a API está online e respondendo corretamente
 - se mudar a API de produção, refaça o deploy com a variável nova
+- **Webpack / caminho com `!`**: pastas como `!PUSH-RAPIDO` quebram o Webpack do Next (`exclamation mark (!) which is not allowed`). Os scripts usam **Turbopack** (`--turbopack`) no `dev` e no `build`. Solução definitiva: clonar/mover o projeto para um caminho sem `!` (ex.: `C:\workspace\push-rapido\`).
+- rode `npm install` e `npm run dev` na **raiz** de `site-push-rapido`, não em `apps/` ou `apps/web`
 
 ## Scripts
 

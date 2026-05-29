@@ -7,8 +7,8 @@
     "apps/web"
   ],
   "scripts": {
-    "dev": "npm run dev -w @push-rapido/web",
-    "build": "npm run build -w @push-rapido/web",
-    "start": "npm run start -w @push-rapido/web"
+    "dev": "next dev --turbopack apps/web -p 3001",
+    "build": "next build --turbopack apps/web",
+    "start": "next start apps/web -p 3001"
   }
 }
