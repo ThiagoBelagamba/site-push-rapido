@@ -231,110 +231,88 @@ export default function Audiencia() {
     }
   }
 
-  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="ui-loading">Carregando...</div>;
   if (!selectedSiteId) {
     return (
-      <div className="page">
+      <div className="ui-page ui-empty">
         <div className="banner-warn">
-          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para escolher o site que será
-          usado na audiência.
+          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para escolher um site.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page animate-in fade-in">
-      <section className="page-hero">
-        <div className="page-hero-stack">
-          <div>
-            <span className="eyebrow">Audiência</span>
-            <h2 className="page-title">Base de usuários inscritos</h2>
-            <p className="page-desc">
-              Pesquise endpoints, remova testes e gerencie quem recebe campanhas neste site.
-            </p>
-            <p className="hint" style={{ marginTop: 12 }}>
-              Site ativo: <strong>{selectedSite?.nome ?? "Selecionado"}</strong>
-            </p>
-          </div>
-          <div className="hero-badges">
-            <div className="hero-chip light">
-              <CheckCircle2 size={16} />
-              <span>{formatNumber(active)} usuários ativos</span>
-            </div>
-            <div className="hero-chip light">
-              <Filter size={16} />
-              <span>{formatNumber(inactive)} usuários inativos ou revogados</span>
-            </div>
-          </div>
-        </div>
-        <div className="hero-actions">
+    <div className="ui-page ui-page-wide animate-in fade-in">
+      <header className="ui-header">
+        <h1 className="ui-title">Base de usuários</h1>
+        <div className="ui-header-actions">
           <Link href="/campanhas/nova" className="btn btn-primary">
             <Users size={16} />
-            <span>Criar campanha</span>
-          </Link>
-          <Link href="/integrar" className="btn btn-ghost">
-            <CheckCircle2 size={16} />
-            <span>Revisar integração</span>
+            <span>Nova Push</span>
           </Link>
         </div>
-      </section>
+      </header>
+
+      <div className="ui-summary">
+        <div className="ui-chip">
+          <CheckCircle2 size={16} />
+          <span>{formatNumber(active)} ativos</span>
+        </div>
+        <div className="ui-chip">
+          <Filter size={16} />
+          <span>{formatNumber(inactive)} inativos</span>
+        </div>
+      </div>
 
       {message ? (
         <div className={`toast ${messageType === "err" ? "toast-error" : ""}`}>{message}</div>
       ) : null}
 
-      <section className="metrics">
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-label">Ativos</span>
-            <span className="metric-icon">
+      <div className="ui-stat-grid">
+        <div className="ui-stat-card">
+          <div className="ui-stat-card-top">
+            <span className="ui-stat-label">Ativos</span>
+            <span className="ui-stat-icon">
               <CheckCircle2 size={20} />
             </span>
           </div>
-          <span className="metric-value">{formatNumber(metrics?.active_subscriptions ?? active)}</span>
-          <p className="metric-trend">Inscrições prontas para novos envios.</p>
+          <span className="ui-stat-value">{formatNumber(metrics?.active_subscriptions ?? active)}</span>
         </div>
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-label">Revogados / inativos</span>
-            <span className="metric-icon">
+        <div className="ui-stat-card">
+          <div className="ui-stat-card-top">
+            <span className="ui-stat-label">Inativos</span>
+            <span className="ui-stat-icon">
               <Filter size={20} />
             </span>
           </div>
-          <span className="metric-value">{formatNumber(metrics?.unregistered_subscriptions ?? inactive)}</span>
-          <p className="metric-trend">Assinaturas limpas automaticamente pelo worker.</p>
+          <span className="ui-stat-value">{formatNumber(metrics?.unregistered_subscriptions ?? inactive)}</span>
         </div>
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-label">Total listado</span>
-            <span className="metric-icon">
+        <div className="ui-stat-card">
+          <div className="ui-stat-card-top">
+            <span className="ui-stat-label">Total</span>
+            <span className="ui-stat-icon">
               <Users size={20} />
             </span>
           </div>
-          <span className="metric-value">{formatNumber(subscriptions.length)}</span>
-          <p className="metric-trend">Entradas retornadas pelo endpoint de inscrições.</p>
+          <span className="ui-stat-value">{formatNumber(subscriptions.length)}</span>
         </div>
-      </section>
+      </div>
 
-      {active === 0 && (
-        <div className="banner-warn">
-          Nenhum inscrito ativo no momento. Revise a instalação do script e conclua o teste de
-          inscrição antes de iniciar campanhas.
-        </div>
-      )}
+      {active === 0 ? (
+        <div className="banner-warn">Nenhum inscrito ativo. Revise a integração antes de enviar campanhas.</div>
+      ) : null}
 
-      <section className="panel">
-        <div className="section-heading">
+      <section className="ui-section">
+        <div className="ui-section-heading">
           <Users size={20} />
-          <div className="section-heading-text">
+          <div>
             <h3>Inscrições</h3>
-            <p>Busca, remoção individual ou limpeza em lote (inativos ou todas).</p>
           </div>
         </div>
 
         {subscriptions.length > 0 ? (
-          <div className="audience-bulk-actions">
+          <div className="ui-actions" style={{ marginBottom: 12 }}>
             <button
               type="button"
               className="btn btn-success btn-sm"
@@ -365,49 +343,46 @@ export default function Audiencia() {
           </div>
         ) : null}
 
-        <div className="toolbar">
-          <div className="toolbar-search">
+        <div className="ui-toolbar">
+          <div className="ui-search">
             <Search size={16} />
             <input
               type="text"
-              placeholder="Pesquisar por endpoint, provider ou user-agent"
+              placeholder="Buscar endpoint, provider ou user-agent"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="filter-group">
+          <div className="ui-inline-tabs">
             <button
               type="button"
-              className={`filter-chip${statusFilter === "all" ? " active" : ""}`}
+              className={`ui-inline-tab${statusFilter === "all" ? " active" : ""}`}
               onClick={() => setStatusFilter("all")}
             >
-              <Filter size={14} />
-              <span>Todos</span>
+              Todos
             </button>
             <button
               type="button"
-              className={`filter-chip${statusFilter === "active" ? " active" : ""}`}
+              className={`ui-inline-tab${statusFilter === "active" ? " active" : ""}`}
               onClick={() => setStatusFilter("active")}
             >
-              <CheckCircle2 size={14} />
-              <span>Ativos</span>
+              Ativos
             </button>
             <button
               type="button"
-              className={`filter-chip${statusFilter === "inactive" ? " active" : ""}`}
+              className={`ui-inline-tab${statusFilter === "inactive" ? " active" : ""}`}
               onClick={() => setStatusFilter("inactive")}
             >
-              <Filter size={14} />
-              <span>Inativos</span>
+              Inativos
             </button>
           </div>
         </div>
 
         {filteredSubscriptions.length === 0 ? (
-          <p className="empty">Nenhuma inscrição encontrada com os filtros atuais.</p>
+          <p className="empty">Nenhuma inscrição com os filtros atuais.</p>
         ) : (
           <>
-            <div className="audience-desktop-table">
+            <div className="ui-table-wrap audience-desktop-table">
               <table className="table">
                 <thead>
                   <tr>

@@ -9,7 +9,6 @@ import {
   Bell,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   MousePointerClick,
   Send,
   Settings,
@@ -27,31 +26,20 @@ function formatPercent(value: number | undefined) {
   return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value ?? 0)}%`;
 }
 
-function MetricCard({
-  icon,
-  title,
-  value,
-  trend,
-}: {
-  icon: ReactNode;
-  title: string;
-  value: string;
-  trend: string;
-}) {
+function StatCard({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="metric-card">
-      <div className="metric-card-top">
-        <span className="metric-label">{title}</span>
-        <span className="metric-icon">{icon}</span>
+    <div className="ui-stat-card">
+      <div className="ui-stat-card-top">
+        <span className="ui-stat-label">{title}</span>
+        <span className="ui-stat-icon">{icon}</span>
       </div>
-      <span className="metric-value">{value}</span>
-      <p className="metric-trend">{trend}</p>
+      <span className="ui-stat-value">{value}</span>
     </div>
   );
 }
 
 export default function Home() {
-  const { selectedSite, selectedSiteId, loading: sitesLoading } = useSiteContext();
+  const { selectedSiteId, loading: sitesLoading } = useSiteContext();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [setup, setSetup] = useState<SetupStatus | null>(null);
   const [health, setHealth] = useState<ServicesHealth | null>(null);
@@ -88,13 +76,12 @@ export default function Home() {
     });
   }, [selectedSiteId]);
 
-  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="ui-loading">Carregando...</div>;
   if (!selectedSiteId) {
     return (
-      <div className="page">
+      <div className="ui-page ui-empty">
         <div className="banner-warn">
-          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para criar ou escolher o site
-          que ficará ativo no painel.
+          Nenhum site selecionado. Abra <Link href="/sites">Sites</Link> para criar ou escolher um site.
         </div>
       </div>
     );
@@ -110,323 +97,211 @@ export default function Home() {
   const primaryAction = (() => {
     if (!setup?.ready) {
       return {
-        eyebrow: "Próximo passo",
-        title: "Finalize a integração para liberar campanhas",
-        description:
-          "Conclua a configuração do site e a instalação do código para começar a captar inscritos e enviar campanhas com segurança.",
+        title: "Finalize a integração",
         ctaHref: "/integrar",
-        ctaLabel: "Concluir integração",
+        ctaLabel: "Configuração Web",
         secondaryHref: "/integrar?aba=dispositivos",
         secondaryLabel: "Testar no celular",
       };
     }
-
     if (activeSubscriptions === 0) {
       return {
-        eyebrow: "Próximo passo",
-        title: "Capte os primeiros inscritos ativos",
-        description:
-          "Seu painel já está pronto, mas ainda não há usuários ativos para receber campanhas. Valide o script no site e teste o fluxo de permissão.",
+        title: "Capte inscritos",
         ctaHref: "/integrar?aba=dispositivos",
         ctaLabel: "Testar no celular",
         secondaryHref: "/integrar/codigo",
-        secondaryLabel: "Revisar instalação",
+        secondaryLabel: "Ver código",
       };
     }
-
     if (!lastCampaign) {
       return {
-        eyebrow: "Próximo passo",
         title: "Crie sua primeira campanha",
-        description:
-          "A integração está concluída e já existem usuários ativos. Agora vale preparar o primeiro rascunho, enviar um teste e validar a operação.",
         ctaHref: "/campanhas/nova",
-        ctaLabel: "Criar campanha",
+        ctaLabel: "Nova Push",
         secondaryHref: "/audiencia",
-        secondaryLabel: "Revisar base ativa",
+        secondaryLabel: "Ver audiência",
       };
     }
-
     return {
-      eyebrow: "Operação em andamento",
-      title: "Seu canal está pronto para otimização",
-      description:
-        "Acompanhe a última campanha, compare indicadores e avance para novos envios com base na audiência ativa e na saúde da infraestrutura.",
+      title: "Canal operacional",
       ctaHref: "/campanhas",
       ctaLabel: "Ver campanhas",
       secondaryHref: "/campanhas/nova",
-      secondaryLabel: "Nova campanha",
+      secondaryLabel: "Nova Push",
     };
   })();
 
   return (
-    <div className="page animate-in fade-in">
-      <section className="page-hero">
-        <div className="page-hero-stack">
-          <div>
-            <span className="eyebrow">{primaryAction.eyebrow}</span>
-            <h2 className="page-title">{primaryAction.title}</h2>
-            <p className="page-desc">
-              {primaryAction.description}
-            </p>
-            <p className="hint" style={{ marginTop: 12 }}>
-              Site ativo: <strong>{selectedSite?.nome ?? "Selecionado"}</strong>
-            </p>
-          </div>
-          <div className="hero-badges">
-            <div className="hero-chip light">
-              <CheckCircle2 size={16} />
-              <span>{setup?.ready ? "Integração concluída" : `${pendingChecks.length} pendência(s) no setup`}</span>
-            </div>
-            <div className="hero-chip light">
-              <Users size={16} />
-              <span>{formatNumber(activeSubscriptions)} usuários prontos para receber push</span>
-            </div>
-            <div className="hero-chip light">
-              <ShieldCheck size={16} />
-              <span>{healthReady ? "Infraestrutura operacional" : "Revisar serviços da plataforma"}</span>
-            </div>
-          </div>
-        </div>
-        <div className="hero-actions">
+    <div className="ui-page ui-page-wide animate-in fade-in">
+      <header className="ui-header">
+        <h1 className="ui-title">Visão Geral</h1>
+        <div className="ui-header-actions">
           <Link href={primaryAction.ctaHref} className="btn btn-primary">
             <ArrowRight size={16} />
             <span>{primaryAction.ctaLabel}</span>
           </Link>
           <Link href={primaryAction.secondaryHref} className="btn btn-ghost">
-            <Settings size={16} />
             <span>{primaryAction.secondaryLabel}</span>
           </Link>
         </div>
-      </section>
+      </header>
 
-      {error && <div className="toast toast-error">{error}</div>}
-
-      <section className="metrics">
-        <MetricCard
-          icon={<Users size={20} />}
-          title="Inscritos ativos"
-          value={formatNumber(activeSubscriptions)}
-          trend="Base disponível para novos envios"
-        />
-        <MetricCard
-          icon={<Bell size={20} />}
-          title="Última taxa de entrega"
-          value={formatPercent(metrics?.last_delivery_rate)}
-          trend="Qualidade do envio mais recente"
-        />
-        <MetricCard
-          icon={<MousePointerClick size={20} />}
-          title="CTR da última campanha"
-          value={formatPercent(metrics?.last_ctr)}
-          trend="Cliques gerados no último disparo"
-        />
-        <MetricCard
-          icon={<CheckCircle2 size={20} />}
-          title="Checklist pronto"
-          value={totalChecks > 0 ? `${completedChecks}/${totalChecks}` : "0/0"}
-          trend={setup?.ready ? "Integração liberada para campanhas" : "Ainda existem pendências"}
-        />
-      </section>
-
-      <div className="dashboard-grid">
-        <section className="panel">
-          <div className="section-heading">
-            <Activity size={20} />
-            <div className="section-heading-text">
-              <h3>Radar operacional</h3>
-              <p>Leitura rápida do que está pronto, do que falta e do que merece atenção imediata.</p>
-            </div>
+      <div className="ui-summary">
+        <div className="ui-chip">
+          <CheckCircle2 size={16} />
+          <span>{primaryAction.title}</span>
+        </div>
+        <div className="ui-chip">
+          <Users size={16} />
+          <span>{formatNumber(activeSubscriptions)} ativos</span>
+        </div>
+        <div className="ui-chip">
+          <ShieldCheck size={16} />
+          <span>{healthReady ? "Infra OK" : "Revisar infra"}</span>
+        </div>
+        {!setup?.ready ? (
+          <div className="ui-chip">
+            <Settings size={16} />
+            <span>{pendingChecks.length} pendência(s)</span>
           </div>
-          <div className="overview-stack">
-            <div className="overview-highlight">
-              <div className="overview-highlight-icon">
-                <CheckCircle2 size={18} />
-              </div>
-              <div>
-                <strong>{setup?.ready ? "Canal liberado para campanhas" : "Integração ainda não concluída"}</strong>
-                <p>
-                  {setup?.ready
-                    ? "A estrutura principal está pronta. O foco agora é audiência, testes e recorrência de envios."
-                    : "Existem pendências que precisam ser resolvidas antes de iniciar envios em produção."}
-                </p>
-              </div>
-            </div>
-
-            <div className="overview-highlight">
-              <div className="overview-highlight-icon">
-                <Users size={18} />
-              </div>
-              <div>
-                <strong>{formatNumber(activeSubscriptions)} usuários ativos na base</strong>
-                <p>
-                  {activeSubscriptions > 0
-                    ? "Já existe audiência disponível para testes controlados e novos disparos."
-                    : "Ainda não há usuários ativos. Priorize a validação do script e da permissão no site."}
-                </p>
-              </div>
-            </div>
-
-            <div className="overview-highlight">
-              <div className="overview-highlight-icon">
-                <ShieldCheck size={18} />
-              </div>
-              <div>
-                <strong>{healthReady ? "Serviços principais operacionais" : "Infraestrutura precisa de revisão"}</strong>
-                <p>{health?.message ?? "API, worker e dependências devem permanecer saudáveis para envio contínuo."}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="section-heading">
-            <Clock3 size={20} />
-            <div className="section-heading-text">
-              <h3>Próximos passos</h3>
-              <p>Atalhos orientados pelo estágio atual da operação para avançar sem perder contexto.</p>
-            </div>
-          </div>
-
-          <div className="overview-actions">
-            <Link href={primaryAction.ctaHref} className="overview-action-card">
-              <strong>{primaryAction.ctaLabel}</strong>
-              <span>{primaryAction.description}</span>
-              <em>Abrir agora</em>
-            </Link>
-            <Link href="/campanhas" className="overview-action-card">
-              <strong>Revisar campanhas</strong>
-              <span>
-                {lastCampaign
-                  ? `Última campanha: ${lastCampaign.titulo} com ${formatNumber(lastCampaign.total_entregues)} entregas.`
-                  : "Abra a central de campanhas para revisar rascunhos, testes e envios."}
-              </span>
-              <em>Ir para campanhas</em>
-            </Link>
-            <Link href="/audiencia" className="overview-action-card">
-              <strong>Acompanhar audiência</strong>
-              <span>
-                Verifique a base ativa, provedores e a evolução das inscrições antes do próximo envio.
-              </span>
-              <em>Ver audiência</em>
-            </Link>
-          </div>
-        </section>
+        ) : null}
       </div>
 
-      <div className="dashboard-grid">
-        <section className="panel">
-          <div className="section-heading">
-            <CheckCircle2 size={20} />
-            <div className="section-heading-text">
-              <h3>Checklist de integração</h3>
-              <p>Resumo dos requisitos que impactam diretamente a operação do canal.</p>
+      {error ? <div className="toast toast-error">{error}</div> : null}
+
+      <div className="ui-stat-grid">
+        <StatCard icon={<Users size={20} />} title="Inscritos ativos" value={formatNumber(activeSubscriptions)} />
+        <StatCard icon={<Bell size={20} />} title="Taxa de entrega" value={formatPercent(metrics?.last_delivery_rate)} />
+        <StatCard icon={<MousePointerClick size={20} />} title="CTR última campanha" value={formatPercent(metrics?.last_ctr)} />
+        <StatCard
+          icon={<CheckCircle2 size={20} />}
+          title="Checklist"
+          value={totalChecks > 0 ? `${completedChecks}/${totalChecks}` : "0/0"}
+        />
+      </div>
+
+      <div className="ui-dashboard-grid">
+        <section className="ui-section">
+          <div className="ui-section-heading">
+            <Activity size={20} />
+            <div>
+              <h3>Status</h3>
             </div>
           </div>
-          {setup ? (
-            <>
-              <ul className="checklist">
-                {setup.items.map((item) => (
-                  <li key={item.id} className={item.ok ? "check-ok" : "check-fail"}>
-                    <span className="check-icon">{item.ok ? "✓" : "○"}</span>
-                    <div>
-                      <strong>{item.label}</strong>
-                      {item.detail && <div className="hint">{item.detail}</div>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              {setup.ready ? (
-                <p className="check-success">Tudo pronto para criar, testar e enviar campanhas.</p>
-              ) : (
-                <p className="hint" style={{ marginTop: 14 }}>
-                  Complete os itens pendentes em <Link href="/integrar">Configuração Web</Link> e{" "}
-                  <Link href="/integrar/codigo">Instalação do código</Link>.
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="empty">Não foi possível carregar o checklist.</p>
-          )}
-        </section>
-
-        <section className="panel">
-          <div className="section-heading">
-            <BarChart2 size={20} />
-            <div className="section-heading-text">
-              <h3>Último envio e desempenho</h3>
-              <p>Indicadores da campanha mais recente para orientar o próximo disparo.</p>
-            </div>
-          </div>
-
-          <div className="status-list">
-            <div className="status-item">
-              <Bell size={18} />
+          <div className="ui-list-stack">
+            <div className="ui-list-item">
+              <CheckCircle2 size={18} />
               <div>
-                <strong>{lastCampaign?.titulo ?? "Nenhuma campanha finalizada ainda"}</strong>
+                <strong>{setup?.ready ? "Integração concluída" : "Integração pendente"}</strong>
                 <span>
-                  {lastCampaign
-                    ? `${formatNumber(lastCampaign.total_entregues)} entregues, ${formatNumber(lastCampaign.total_cliques)} cliques e ${formatNumber(lastCampaign.total_alvo)} usuários impactados no último envio.`
-                    : "Quando a primeira campanha for finalizada, os principais indicadores aparecem aqui."}
+                  {setup?.ready
+                    ? "Pronto para campanhas."
+                    : `${pendingChecks.length} item(ns) pendente(s).`}
                 </span>
               </div>
             </div>
-            <div className="status-item">
-              <MousePointerClick size={18} />
+            <div className="ui-list-item">
+              <Users size={18} />
               <div>
-                <strong>CTR atual: {formatPercent(metrics?.last_ctr)}</strong>
-                <span>Use esse indicador para revisar mensagem, segmentação e destino do clique.</span>
+                <strong>{formatNumber(activeSubscriptions)} inscritos ativos</strong>
+                <span>{activeSubscriptions > 0 ? "Base disponível para envio." : "Nenhum inscrito ainda."}</span>
               </div>
             </div>
-            <div className="status-item">
-              <Send size={18} />
+            <div className="ui-list-item">
+              <ShieldCheck size={18} />
               <div>
-                <strong>Taxa de entrega: {formatPercent(metrics?.last_delivery_rate)}</strong>
-                <span>Quedas aqui normalmente pedem revisão da base, do worker ou do estado da infraestrutura.</span>
+                <strong>{healthReady ? "Serviços operacionais" : "Infra com alerta"}</strong>
+                <span>{health?.message ?? "API e worker devem estar saudáveis."}</span>
               </div>
             </div>
           </div>
         </section>
+
+        <section className="ui-section">
+          <div className="ui-section-heading">
+            <BarChart2 size={20} />
+            <div>
+              <h3>Último envio</h3>
+            </div>
+          </div>
+          {lastCampaign ? (
+            <div className="ui-list-stack">
+              <div className="ui-list-item">
+                <Bell size={18} />
+                <div>
+                  <strong>{lastCampaign.titulo}</strong>
+                  <span>
+                    {formatNumber(lastCampaign.total_entregues)} entregues · {formatNumber(lastCampaign.total_cliques)}{" "}
+                    cliques
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="empty">Nenhuma campanha enviada ainda.</p>
+          )}
+        </section>
       </div>
 
-      <section className="quick-links">
-        <Link href="/campanhas/nova" className="quick-card">
-          <div className="quick-card-copy">
-            <strong>Nova campanha</strong>
-            <span>Crie um novo rascunho com preview por plataforma, teste e revisão de envio.</span>
+      <section className="ui-section">
+        <div className="ui-section-heading">
+          <CheckCircle2 size={20} />
+          <div>
+            <h3>Checklist</h3>
           </div>
-          <span className="quick-card-icon">
+        </div>
+        {setup ? (
+          <>
+            <ul className="checklist">
+              {setup.items.map((item) => (
+                <li key={item.id} className={item.ok ? "check-ok" : "check-fail"}>
+                  <span className="check-icon">{item.ok ? "✓" : "○"}</span>
+                  <div>
+                    <strong>{item.label}</strong>
+                    {item.detail ? <div className="hint">{item.detail}</div> : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {setup.ready ? (
+              <p className="check-success">Pronto para enviar campanhas.</p>
+            ) : (
+              <p className="hint" style={{ marginTop: 12 }}>
+                Pendências em <Link href="/integrar">Configuração Web</Link>.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="empty">Checklist indisponível.</p>
+        )}
+      </section>
+
+      <div className="ui-quick-grid">
+        <Link href="/campanhas/nova" className="ui-quick-card">
+          <strong>Nova Push</strong>
+          <span className="ui-quick-card-icon">
             <Send size={20} />
           </span>
         </Link>
-        <Link href="/audiencia" className="quick-card">
-          <div className="quick-card-copy">
-            <strong>Audiência</strong>
-            <span>Veja provedores, status das inscrições e o volume total da lista.</span>
-          </div>
-          <span className="quick-card-icon">
+        <Link href="/audiencia" className="ui-quick-card">
+          <strong>Base de usuários</strong>
+          <span className="ui-quick-card-icon">
             <Users size={20} />
           </span>
         </Link>
-        <Link href="/integrar" className="quick-card">
-          <div className="quick-card-copy">
-            <strong>Configuração Web</strong>
-            <span>Revise o site, o prompt de permissão e o código de instalação.</span>
-          </div>
-          <span className="quick-card-icon">
+        <Link href="/integrar" className="ui-quick-card">
+          <strong>Configuração Web</strong>
+          <span className="ui-quick-card-icon">
             <Settings size={20} />
           </span>
         </Link>
-        <Link href="/integrar/codigo" className="quick-card">
-          <div className="quick-card-copy">
-            <strong>Instalação do código</strong>
-            <span>Baixe o service worker e copie o snippet pronto para o site.</span>
-          </div>
-          <span className="quick-card-icon">
+        <Link href="/integrar/codigo" className="ui-quick-card">
+          <strong>Código de instalação</strong>
+          <span className="ui-quick-card-icon">
             <ChevronRight size={20} />
           </span>
         </Link>
-      </section>
+      </div>
     </div>
   );
 }

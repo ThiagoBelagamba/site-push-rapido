@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Bell } from "lucide-react";
+import { Activity } from "lucide-react";
 import { api, clearToken, getSelectedSiteId, isLoggedIn, setSelectedSiteId, setToken } from "@/lib/api";
 
 async function resolveLandingRoute(): Promise<string> {
@@ -55,18 +55,9 @@ export default function LoginPage() {
     <div className="login-page">
       <form className="login-card animate-in fade-in" onSubmit={handleSubmit}>
         <div className="login-brand">
-          <div className="login-brand-icon" aria-hidden>
-            <Bell size={24} />
-          </div>
-          <div className="login-brand-copy">
-            <h1>Push Rápido</h1>
-            <p className="login-subtitle">
-              Acesse o painel para configurar o site, acompanhar sua audiência e operar campanhas de
-              Web Push com mais segurança.
-            </p>
-          </div>
+          <img src="/logo-horizontal.png" alt="Push Rápido" className="login-logo" />
+          <p className="login-subtitle">Entre para gerenciar push do seu site.</p>
         </div>
-        <p className="login-support-copy">Use as credenciais da sua conta para entrar no painel.</p>
         {error && <div className="login-error">{error}</div>}
         <label>
           E-mail
@@ -95,7 +86,7 @@ export default function LoginPage() {
               <span>Entrando...</span>
             </>
           ) : (
-            "Entrar no painel"
+            "Entrar"
           )}
         </button>
       </form>

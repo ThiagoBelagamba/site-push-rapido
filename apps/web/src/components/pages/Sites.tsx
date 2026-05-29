@@ -127,102 +127,94 @@ export default function Sites() {
     }
   }
 
-  if (loadingSites) return <div className="loading">Carregando...</div>;
+  if (loadingSites) return <div className="ui-loading">Carregando...</div>;
 
   return (
-    <div className="page animate-in fade-in">
-      <section className="page-hero">
-        <div className="page-hero-stack">
-          <div>
-            <span className="eyebrow">Sites</span>
-            <h1 className="page-title">Gerenciar sites conectados</h1>
-            <p className="page-desc">
-              Cadastre novos domínios, escolha o site ativo do painel e abra a configuração detalhada
-              de integração de cada um deles.
-            </p>
-          </div>
-        </div>
-        <div className="hero-actions">
+    <div className="ui-page animate-in fade-in">
+      <header className="ui-header">
+        <h1 className="ui-title">Sites</h1>
+        <div className="ui-header-actions">
           <button type="button" className="btn btn-primary" onClick={startCreate}>
             <Plus size={16} />
             <span>Novo site</span>
           </button>
           {activeSite ? (
-            <>
-              <button type="button" className="btn btn-ghost" onClick={() => router.push("/integrar")}>
-                <Settings size={16} />
-                <span>Abrir configuração</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => router.push("/integrar?aba=dispositivos")}
-              >
-                <span>Testar no celular</span>
-              </button>
-            </>
+            <button type="button" className="btn btn-ghost" onClick={() => router.push("/integrar")}>
+              <Settings size={16} />
+              <span>Configuração Web</span>
+            </button>
           ) : null}
         </div>
-      </section>
+      </header>
 
       {error ? <div className="toast toast-error">{error}</div> : null}
       {message ? <div className={`toast ${messageType === "err" ? "toast-error" : ""}`}>{message}</div> : null}
 
-      <div className="dashboard-grid">
-        <section className="panel">
-          <div className="section-heading">
+      <div className="ui-dashboard-grid">
+        <section className="ui-section">
+          <div className="ui-section-heading">
             <Globe size={20} />
-            <div className="section-heading-text">
-              <h3>Lista de sites</h3>
-              <p>Escolha o site que ficará ativo para campanhas, audiência e integração.</p>
+            <div>
+              <h3>Sites cadastrados</h3>
             </div>
           </div>
 
           {sites.length === 0 ? (
-            <p className="empty">Nenhum site cadastrado ainda. Crie o primeiro para começar.</p>
+            <p className="empty">Nenhum site cadastrado. Crie o primeiro acima.</p>
           ) : (
-            <div className="overview-actions">
+            <div className="ui-site-list">
               {sites.map((site) => {
-                const active = String(site.id) === selectedSiteId;
+                const isActive = String(site.id) === selectedSiteId;
                 return (
-                  <button
-                    key={site.id}
-                    type="button"
-                    className="overview-action-card"
-                    onClick={() => {
-                      selectSite(site.id);
-                      void startEdit(site.id);
-                    }}
-                    style={{ textAlign: "left" }}
-                  >
-                    <strong>{site.nome}</strong>
-                    <span>{site.url_origem}</span>
-                    <span>
-                      {site.active_subscriptions ?? 0} inscritos ativos · {site.campaign_count ?? 0} campanhas
-                      {!/^https:\/\//i.test(site.url_origem) ? " · HTTPS pendente" : ""}
-                    </span>
-                    <em>{active ? "Site ativo" : "Selecionar este site"}</em>
-                  </button>
+                  <div key={site.id} className={`ui-site-row${isActive ? " active" : ""}`}>
+                    <button
+                      type="button"
+                      className="ui-site-row-main"
+                      style={{ border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
+                      onClick={() => {
+                        selectSite(site.id);
+                        void startEdit(site.id);
+                      }}
+                    >
+                      <strong>{site.nome}</strong>
+                      <span>
+                        {site.url_origem} · {site.active_subscriptions ?? 0} ativos · {site.campaign_count ?? 0}{" "}
+                        campanhas
+                      </span>
+                    </button>
+                    <div className="ui-site-row-actions">
+                      {isActive ? (
+                        <span className="ui-chip">Ativo</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => {
+                            selectSite(site.id);
+                            void startEdit(site.id);
+                          }}
+                        >
+                          Selecionar
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
         </section>
 
-        <section className="panel">
-          <div className="section-heading">
+        <section className="ui-section">
+          <div className="ui-section-heading">
             <Settings size={20} />
-            <div className="section-heading-text">
+            <div>
               <h3>{editingSiteId ? "Editar site" : "Cadastrar site"}</h3>
-              <p>
-                Este cadastro inicial define o domínio e o identificador do site. O restante da
-                integração pode ser concluído depois em Configuração Web.
-              </p>
             </div>
           </div>
 
-          <div className="form">
-            <label>
+          <div className="ui-stack">
+            <label className="ui-field-group">
               <span className="field-label">Nome do site</span>
               <input
                 value={form.nome ?? ""}
@@ -231,7 +223,7 @@ export default function Sites() {
               />
             </label>
 
-            <label>
+            <label className="ui-field-group">
               <span className="field-label">URL do site</span>
               <input
                 type="url"
@@ -241,7 +233,7 @@ export default function Sites() {
               />
             </label>
 
-            <label>
+            <label className="ui-field-group">
               <span className="field-label">Slug interno (opcional)</span>
               <input
                 value={form.slug ?? ""}
@@ -250,8 +242,8 @@ export default function Sites() {
               />
             </label>
 
-            <div className="form-actions">
-              <button type="button" className="btn" onClick={startCreate}>
+            <div className="ui-actions">
+              <button type="button" className="btn btn-ghost" onClick={startCreate}>
                 Limpar
               </button>
               <button type="button" className="btn btn-primary" onClick={() => void saveSite()} disabled={saving}>

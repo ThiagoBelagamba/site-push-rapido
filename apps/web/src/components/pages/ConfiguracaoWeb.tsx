@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   CheckCircle2,
+  ChevronRight,
   Copy,
   Download,
   Globe,
@@ -40,12 +41,12 @@ const defaultPrompt: PromptConfig = {
 
 function SlidedownPreview({ prompt, compact }: { prompt: PromptConfig; compact?: boolean }) {
   return (
-    <div className={`preview-box${compact ? " preview-box-mobile" : ""}`}>
+    <div className={`ui-preview${compact ? " ui-preview-mobile" : ""}`}>
       <strong>Preview do soft prompt</strong>
       <div className="pr-slidedown-preview">
         <p>{prompt.slidedown.actionMessage}</p>
         <div className="preview-actions">
-          <button type="button" className="btn btn-sm">
+          <button type="button" className="btn btn-sm btn-ghost">
             {prompt.slidedown.cancelButton}
           </button>
           <button type="button" className="btn btn-sm btn-primary">
@@ -308,15 +309,15 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
     if (ok) router.push("/campanhas");
   }
 
-  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="ui-loading">Carregando...</div>;
   if (!selectedSiteId) {
     return (
-      <div className="page">
+      <div className="ui-page ui-empty">
         <div className="banner-warn">
           Nenhum site selecionado. Abra a tela de Sites para criar ou escolher o site que será
           configurado.
         </div>
-        <div className="form-actions">
+        <div className="ui-actions">
           <button type="button" className="btn btn-primary" onClick={() => router.push("/sites")}>
             Abrir Sites
           </button>
@@ -326,19 +327,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
   }
 
   return (
-    <div className="page animate-in fade-in">
-      <header className="page-header-simple settings-header-flat">
-        <div>
-          <span className="eyebrow">Configuração</span>
-          <h1 className="page-title">Configuração Web</h1>
-          <p className="page-desc">
-            Configure domínio, prompt de permissão, instalação do SDK e testes em Android e iPhone.
-          </p>
-          <p className="hint" style={{ marginTop: 12 }}>
-            Site ativo: <strong>{selectedSite?.nome ?? nome}</strong>
-          </p>
-        </div>
-        <div className="settings-header-actions">
+    <div className="ui-page animate-in fade-in">
+      <header className="ui-header">
+        <h1 className="ui-title">Configuração Web</h1>
+        <div className="ui-header-actions">
           {!setup?.ready ? (
             <button type="button" className="btn btn-primary" onClick={() => goToTab("install")}>
               Ver pendências
@@ -354,95 +346,104 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
       {message ? <div className={`toast ${messageType === "err" ? "toast-error" : ""}`}>{message}</div> : null}
       {setupError ? <div className="toast toast-error">{setupError}</div> : null}
 
-      <section className="panel settings-shell">
-        <div className="settings-content settings-content-wide">
-          <section className="settings-section-shell">
-            <div className="settings-section-label">1. Escolha da integração</div>
-            <div className="settings-choice-grid">
+      <div className="ui-body">
+          <section className="ui-section">
+            <div className="ui-section-label">1. Escolha da integração</div>
+            <div className="ui-tabs">
               <button
                 type="button"
                 onClick={() => goToTab("setup")}
-                className={`settings-choice-card${activeTab === "setup" ? " active" : ""}`}
+                className={`ui-tab-card${activeTab === "setup" ? " active" : ""}`}
               >
-                <div className="settings-choice-icon">
-                  <Globe size={18} />
+                <div className="ui-tab-card-main">
+                  <div className="ui-tab-icon">
+                    <Globe size={20} />
+                  </div>
+                  <div className="ui-tab-copy">
+                    <strong>Site padrão</strong>
+                    <span>Domínio, ícone e opções base</span>
+                  </div>
                 </div>
-                <div className="settings-choice-copy">
-                  <strong>Site padrão</strong>
-                  <span>Ideal para a maioria dos sites que precisam configurar domínio, ícone e comportamento base.</span>
-                </div>
+                <ChevronRight size={16} className="ui-tab-chevron" />
               </button>
               <button
                 type="button"
                 onClick={() => goToTab("prompt")}
-                className={`settings-choice-card${activeTab === "prompt" ? " active" : ""}`}
+                className={`ui-tab-card${activeTab === "prompt" ? " active" : ""}`}
               >
-                <div className="settings-choice-icon">
-                  <Bell size={18} />
+                <div className="ui-tab-card-main">
+                  <div className="ui-tab-icon">
+                    <Bell size={20} />
+                  </div>
+                  <div className="ui-tab-copy">
+                    <strong>Prompt de permissão</strong>
+                    <span>Mensagem e botões do soft prompt</span>
+                  </div>
                 </div>
-                <div className="settings-choice-copy">
-                  <strong>Prompt de permissão</strong>
-                  <span>Personalize a mensagem, botões e tempo de disparo do soft prompt antes da permissão nativa.</span>
-                </div>
+                <ChevronRight size={16} className="ui-tab-chevron" />
               </button>
               <button
                 type="button"
                 onClick={() => goToTab("install")}
-                className={`settings-choice-card${activeTab === "install" ? " active" : ""}`}
+                className={`ui-tab-card${activeTab === "install" ? " active" : ""}`}
               >
-                <div className="settings-choice-icon">
-                  <Settings size={18} />
+                <div className="ui-tab-card-main">
+                  <div className="ui-tab-icon">
+                    <Settings size={20} />
+                  </div>
+                  <div className="ui-tab-copy">
+                    <strong>Código personalizado</strong>
+                    <span>Service worker e snippet do SDK</span>
+                  </div>
                 </div>
-                <div className="settings-choice-copy">
-                  <strong>Código personalizado</strong>
-                  <span>Baixe o service worker e copie o snippet do SDK para instalar manualmente no site.</span>
-                </div>
+                <ChevronRight size={16} className="ui-tab-chevron" />
               </button>
               <button
                 type="button"
                 onClick={() => goToTab("devices")}
-                className={`settings-choice-card${activeTab === "devices" ? " active" : ""}`}
+                className={`ui-tab-card${activeTab === "devices" ? " active" : ""}`}
               >
-                <div className="settings-choice-icon">
-                  <Smartphone size={18} />
+                <div className="ui-tab-card-main">
+                  <div className="ui-tab-icon">
+                    <Smartphone size={20} />
+                  </div>
+                  <div className="ui-tab-copy">
+                    <strong>Dispositivos móveis</strong>
+                    <span>Testes Android e iPhone</span>
+                  </div>
                 </div>
-                <div className="settings-choice-copy">
-                  <strong>Dispositivos móveis</strong>
-                  <span>Guias para Android (HTTPS) e iPhone (Safari + Tela de Início).</span>
-                </div>
+                <ChevronRight size={16} className="ui-tab-chevron" />
               </button>
             </div>
           </section>
 
-          <div className="settings-install-summary settings-summary-inline">
-            <div className="hero-chip light">
+          <div className="ui-summary">
+            <div className="ui-chip">
               <CheckCircle2 size={16} />
               <span>Checklist {completedChecks}/{totalChecks}</span>
             </div>
-            <div className="hero-chip light">
+            <div className="ui-chip">
               <Settings size={16} />
               <span>{configurado ? "Site configurado" : "Configuração pendente"}</span>
             </div>
-            <div className="hero-chip light">
+            <div className="ui-chip">
               <Globe size={16} />
               <span>{originLabel}</span>
             </div>
           </div>
 
           {activeTab === "setup" ? (
-            <section className="settings-section-shell">
-              <div className="settings-section-label">2. Configuração do site</div>
-              <div className="settings-setup-grid">
-                <div className="settings-stack">
-                  <div className="settings-block">
+            <section className="ui-section">
+              <div className="ui-section-label">2. Configuração do site</div>
+              <div className="ui-form-grid">
+                <div className="ui-stack">
+                  <div className="ui-field-group">
                     <h3>Nome da aplicação / site</h3>
-                    <p>Identifica este site dentro do seu painel.</p>
                     <input value={nome} onChange={(e) => setNome(e.target.value)} />
                   </div>
 
-                  <div className="settings-block">
+                  <div className="ui-field-group">
                     <h3>URL do site</h3>
-                    <p>Informe a origem exata onde o script será instalado.</p>
                     <input
                       type="url"
                       value={urlOrigem}
@@ -451,14 +452,11 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                     />
                   </div>
 
-                  <div className="settings-block">
+                  <div className="ui-field-group">
                     <h3>Ícone da notificação</h3>
-                    <p>
-                      Envie um ícone ou use uma URL pública já disponível. Para Safari (Mac) e iPhone,
-                      use <strong>PNG 256×256 em HTTPS</strong> — SVG não é exibido nas notificações Apple.
-                    </p>
+                    <p className="hint">PNG 256×256 em HTTPS (Safari e iPhone não exibem SVG).</p>
                     <div className="icon-upload-row">
-                      <label className="btn btn-ghost settings-upload-button">
+                      <label className="ui-upload-btn">
                         <UploadCloud size={16} />
                         <span>{iconUploading ? "Enviando..." : "Carregar ícone"}</span>
                         <input
@@ -486,14 +484,11 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                   </div>
                 </div>
 
-                <aside className="settings-side-card">
-                  <h3>Auto Resubscribe</h3>
-                  <p>
-                    Recomendado para ajudar a recuperar inscrições quando o navegador limpa dados e o
-                    usuário retorna ao site.
-                  </p>
-                  <div className="settings-side-list">
-                    <label className="checkbox settings-checkbox">
+                <aside className="ui-side-card">
+                  <h3>Opções avançadas</h3>
+                  <p>Recupera inscrições quando o navegador limpa os dados.</p>
+                  <div className="ui-side-list">
+                    <label className="ui-checkbox">
                       <input
                         type="checkbox"
                         checked={autoResubscribe}
@@ -502,7 +497,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                       <span>Reinscrever automaticamente após limpeza de dados do navegador</span>
                     </label>
 
-                    <label className="checkbox settings-checkbox">
+                    <label className="ui-checkbox">
                       <input
                         type="checkbox"
                         checked={allowLocalhost}
@@ -511,7 +506,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                       <span>Permitir HTTP apenas em localhost para testes internos</span>
                     </label>
 
-                    <label className="checkbox settings-checkbox">
+                    <label className="ui-checkbox">
                       <input
                         type="checkbox"
                         checked={welcomeEnabled}
@@ -524,12 +519,12 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
               </div>
 
               {welcomeEnabled ? (
-                <div className="settings-grid-two">
-                  <div className="settings-block">
+                <div className="ui-grid-two">
+                  <div className="ui-field-group">
                     <h3>Título da mensagem de boas-vindas</h3>
                     <input value={welcomeTitulo} onChange={(e) => setWelcomeTitulo(e.target.value)} />
                   </div>
-                  <div className="settings-block">
+                  <div className="ui-field-group">
                     <h3>Mensagem de boas-vindas</h3>
                     <textarea
                       value={welcomeMensagem}
@@ -540,7 +535,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 </div>
               ) : null}
 
-              <div className="settings-actions">
+              <div className="ui-actions">
                 <button type="button" className="btn btn-primary" onClick={() => void save(undefined, "Alterações salvas.")} disabled={saving}>
                   {saving ? "Salvando..." : "Salvar alterações"}
                 </button>
@@ -549,10 +544,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
           ) : null}
 
           {activeTab === "devices" ? (
-            <section className="settings-section-shell">
-              <div className="settings-section-label">Testes em dispositivos</div>
-              <div className="settings-grid-two">
-                <div className="settings-block">
+            <section className="ui-section">
+              <div className="ui-section-label">Testes em dispositivos</div>
+              <div className="ui-grid-two">
+                <div className="ui-field-group">
                   <h3>Android (Chrome)</h3>
                   <ul className="checklist checklist-plain">
                     <li>O site deve estar em <strong>HTTPS</strong> no celular (HTTP só funciona em localhost no PC).</li>
@@ -561,7 +556,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                     <li>Se bloqueou antes: cadeado do Chrome → Configurações do site → Notificações → Permitir.</li>
                   </ul>
                 </div>
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>iPhone (Safari + PWA)</h3>
                   <ul className="checklist checklist-plain">
                     <li><strong>Chrome no iPhone não suporta</strong> push web — use o Safari.</li>
@@ -572,7 +567,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                     <li>Após atualizar o service worker no painel, republique o <code>sw.js</code> no site.</li>
                   </ul>
                 </div>
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>Mac (Safari)</h3>
                   <ul className="checklist checklist-plain">
                     <li>Use ícone PNG em HTTPS (não SVG).</li>
@@ -582,7 +577,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 </div>
               </div>
               {urlOrigem ? (
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>Abrir site para teste</h3>
                   <p className="hint">Use o mesmo domínio configurado no painel.</p>
                   <div className="deploy-url">
@@ -592,7 +587,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                   </div>
                 </div>
               ) : null}
-              <label className="checkbox settings-checkbox">
+              <label className="ui-checkbox">
                 <input
                   type="checkbox"
                   checked={mobileTested}
@@ -600,7 +595,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 />
                 <span>Marquei que testei a inscrição em um celular (Android ou iPhone PWA)</span>
               </label>
-              <div className="settings-actions">
+              <div className="ui-actions">
                 <button type="button" className="btn btn-primary" onClick={() => void save(undefined, "Status mobile salvo.")} disabled={saving}>
                   {saving ? "Salvando..." : "Salvar status de teste"}
                 </button>
@@ -609,14 +604,14 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
           ) : null}
 
           {activeTab === "prompt" ? (
-            <section className="settings-section-shell">
-              <div className="settings-section-label">3. Prompt de permissão</div>
+            <section className="ui-section">
+              <div className="ui-section-label">3. Prompt de permissão</div>
               <div className="warn">
                 O formato do prompt nativo varia por navegador. No celular, o usuário precisa tocar em
                 Permitir. Em Android, prefira desligar o prompt automático se o Chrome bloquear permissões.
               </div>
 
-              <label className="checkbox settings-checkbox">
+              <label className="ui-checkbox">
                 <input
                   type="checkbox"
                   checked={autoPromptEnabled}
@@ -630,7 +625,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 <span>Acionar automaticamente</span>
               </label>
 
-              <div className="settings-block">
+              <div className="ui-field-group">
                 <h3>Mensagem do prompt</h3>
                 <textarea
                   value={prompt.slidedown.actionMessage}
@@ -644,8 +639,8 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 />
               </div>
 
-              <div className="settings-grid-two">
-                <div className="settings-block">
+              <div className="ui-grid-two">
+                <div className="ui-field-group">
                   <h3>Botão aceitar</h3>
                   <input
                     value={prompt.slidedown.acceptButton}
@@ -657,7 +652,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                     }
                   />
                 </div>
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>Botão cancelar</h3>
                   <input
                     value={prompt.slidedown.cancelButton}
@@ -672,7 +667,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
               </div>
 
               {autoPromptEnabled ? (
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>Atraso do prompt automático (ms)</h3>
                   <input
                     type="number"
@@ -687,7 +682,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 </div>
               ) : null}
 
-              <div className="settings-block">
+              <div className="ui-field-group">
                 <h3>Tooltip do sino</h3>
                 <input
                   value={prompt.bell.tooltip}
@@ -700,12 +695,12 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 />
               </div>
 
-              <div className="settings-grid-two">
+              <div className="ui-grid-two">
                 <SlidedownPreview prompt={prompt} />
                 <SlidedownPreview prompt={prompt} compact />
               </div>
 
-              <div className="settings-block">
+              <div className="ui-field-group">
                 <h3>Mensagens para iPhone (SDK)</h3>
                 <p className="hint">Exibidas quando o visitante usa Chrome no iOS ou Safari sem PWA.</p>
                 <textarea
@@ -739,7 +734,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 />
               </div>
 
-              <div className="settings-actions">
+              <div className="ui-actions">
                 <button type="button" className="btn btn-primary" onClick={() => void save(undefined, "Prompts atualizados.")} disabled={saving}>
                   {saving ? "Salvando..." : "Salvar prompts"}
                 </button>
@@ -748,10 +743,10 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
           ) : null}
 
           {activeTab === "install" ? (
-            <section className="settings-section-shell">
-              <div className="settings-section-label">4. Integração de código</div>
-              <div className="settings-stack">
-                <div className="settings-overview-card">
+            <section className="ui-section">
+              <div className="ui-section-label">4. Integração de código</div>
+              <div className="ui-stack">
+                <div className="ui-highlight-card">
                   <span>Próximo passo recomendado</span>
                   <strong>{nextPendingItem?.label ?? "Tudo pronto para lançar campanhas"}</strong>
                   <p>
@@ -762,7 +757,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
               </div>
 
               {setup ? (
-                <section className="panel-muted settings-install-card">
+                <section className="ui-checklist-card">
                   <div className="section-heading">
                     <CheckCircle2 size={18} />
                     <div className="section-heading-text">
@@ -785,7 +780,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
               ) : null}
 
               {snippet?.instructions?.length ? (
-                <section className="settings-block">
+                <section className="ui-field-group">
                   <h3>Instruções de instalação</h3>
                   <ul className="checklist checklist-plain">
                     {snippet.instructions.map((line) => (
@@ -795,12 +790,12 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 </section>
               ) : null}
 
-              <div className="settings-grid-two">
-                <div className="settings-block">
+              <div className="ui-grid-two">
+                <div className="ui-field-group">
                   <h3>Caminho do Service Worker</h3>
                   <input value={swPath} onChange={(e) => setSwPath(e.target.value)} placeholder="/push/sw.js" />
                 </div>
-                <div className="settings-block">
+                <div className="ui-field-group">
                   <h3>Escopo do Service Worker</h3>
                   <input value={swScope} onChange={(e) => setSwScope(e.target.value)} placeholder="/push/" />
                 </div>
@@ -812,18 +807,15 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 </div>
               ) : null}
 
-              <section className="settings-block">
+              <section className="ui-field-group">
                 <h3>1. Baixar o Service Worker</h3>
-                <p>
-                  Baixe o arquivo abaixo e publique-o na raiz ou subpasta correta do seu servidor web.
-                  Republique após cada atualização da API (obrigatório para Safari/iPhone).
-                </p>
+                <p className="hint">Publique o arquivo no seu servidor e republique a cada atualização da API.</p>
                 {snippet ? (
                   <>
                     <div className="deploy-url">
                       <code>{snippet.service_worker_deploy_url}</code>
                     </div>
-                    <div className="settings-actions">
+                    <div className="ui-actions">
                       <button type="button" className="btn btn-primary" onClick={downloadSw}>
                         <Download size={16} />
                         <span>Baixar {snippet.service_worker_filename}</span>
@@ -847,12 +839,9 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 )}
               </section>
 
-              <section className="settings-block">
+              <section className="ui-field-group">
                 <h3>2. Adicionar o script do SDK</h3>
-                <p>
-                  Copie e cole este código no arquivo HTML principal do seu site, dentro da tag &lt;head&gt;.
-                  O snippet inclui o manifest PWA exigido no iPhone.
-                </p>
+                <p className="hint">Cole no &lt;head&gt; do seu site. O snippet já inclui o manifest PWA do iPhone.</p>
                 {snippet?.manifest_url ? (
                   <p className="hint">
                     Manifest: <code>{snippet.manifest_url}</code>
@@ -861,7 +850,7 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 {snippet ? (
                   <>
                     <pre className="code-block">{snippet.snippet_html}</pre>
-                    <div className="settings-actions">
+                    <div className="ui-actions">
                       <button
                         type="button"
                         className="btn btn-primary"
@@ -879,15 +868,14 @@ export default function ConfiguracaoWeb({ initialTab = "setup" }: { initialTab?:
                 ) : null}
               </section>
 
-              <div className="settings-actions">
+              <div className="ui-actions">
                 <button type="button" className="btn btn-primary" onClick={() => void handleConclude()} disabled={saving}>
                   {saving ? "Concluindo..." : "Salvar e concluir"}
                 </button>
               </div>
             </section>
           ) : null}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

@@ -12,15 +12,15 @@ export default function RootPage() {
   }, [router]);
 
   return (
-    <main className="page">
-      <section className="page-header-simple">
-        <div>
-          <h1>Abrindo o painel</h1>
-          <p>Você está sendo redirecionado para a página de login.</p>
+    <main className="ui-page">
+      <section className="ui-section">
+        <h1 className="ui-title">Abrindo o painel</h1>
+        <p>Redirecionando para o login…</p>
+        <div className="ui-actions">
+          <Link className="btn btn-primary" href="/login">
+            Ir para login
+          </Link>
         </div>
-        <Link className="button-secondary" href="/login">
-          Ir para login
-        </Link>
       </section>
     </main>
   );

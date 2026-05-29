@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Bell,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Globe,
   Home,
@@ -136,13 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={`sidebar${mobileNavOpen ? " sidebar-open" : ""}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <div className="brand-icon" aria-hidden>
-              <Bell size={22} />
-            </div>
-            <div className="brand-copy">
-              <h1>Push Rápido</h1>
-              <p>Painel Web Push</p>
-            </div>
+            <img src="/logo-horizontal.png" alt="Push Rápido" className="sidebar-logo" />
           </div>
           <button
             type="button"
@@ -150,12 +145,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setMobileNavOpen(false)}
             aria-label="Fechar navegação"
           >
-            <X size={18} />
+            <X size={24} />
           </button>
         </div>
-        <nav>
+        <div className="sidebar-divider" aria-hidden />
+        <nav className="sidebar-nav custom-scrollbar">
           {navGroups.map((group) => (
-            <div key={group.title}>
+            <div key={group.title} className="nav-group">
               <span className="nav-group-label">{group.title}</span>
               <ul className="nav-list">
                 {group.items.map((item) => {
@@ -166,10 +162,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <Link
                         href={item.href}
                         className={`nav-link${active ? " active" : ""}${item.highlight ? " nav-link-highlight" : ""}`}
+                        onClick={() => {
+                          if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                            setMobileNavOpen(false);
+                          }
+                        }}
                       >
-                        <Icon size={18} />
-                        <span>{item.label}</span>
-                        <ChevronRight size={15} className="chevron" />
+                        <div className="nav-link-main">
+                          <Icon size={20} className="nav-link-icon" />
+                          <span className="nav-link-label">{item.label}</span>
+                        </div>
+                        <ChevronRight size={16} className="chevron" />
                       </Link>
                     </li>
                   );
@@ -179,28 +182,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="sidebar-status">
-            <span>{sitesLoading ? "Carregando sites..." : "Site ativo"}</span>
-            <select
-              value={selectedSiteId ?? ""}
-              onChange={(e) => selectSite(e.target.value || null)}
-              disabled={sitesLoading || sites.length === 0}
-              style={{ width: "100%", marginTop: 8 }}
-            >
-              {sites.length === 0 ? <option value="">Nenhum site</option> : null}
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.nome}
-                </option>
-              ))}
-            </select>
+          <div className="sidebar-site-select">
+            <label className="sidebar-site-label" htmlFor="sidebar-site-select">
+              Site
+              <br />
+              ativo
+            </label>
+            <div className="sidebar-site-field">
+              <select
+                id="sidebar-site-select"
+                className="sidebar-site-input"
+                value={selectedSiteId ?? ""}
+                onChange={(e) => selectSite(e.target.value || null)}
+                disabled={sitesLoading || sites.length === 0}
+              >
+                {sites.length === 0 ? <option value="">Nenhum site</option> : null}
+                {sites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.nome}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="sidebar-site-chevron" aria-hidden />
+            </div>
           </div>
-          <div className={`sidebar-status sidebar-status-${statusTone}`}>
-            <StatusIcon size={16} />
-            <span>{statusLabel}</span>
+          <div className={`sidebar-alert sidebar-alert-${statusTone}`}>
+            <StatusIcon size={18} strokeWidth={statusTone === "pending" ? 2.5 : 2} />
+            <span>{sitesLoading ? "Carregando sites..." : statusLabel}</span>
           </div>
           <button type="button" className="btn-logout" onClick={logout}>
-            <LogOut size={16} />
+            <LogOut size={18} />
             <span>Sair</span>
           </button>
         </div>
@@ -213,17 +224,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setMobileNavOpen(true)}
             aria-label="Abrir navegação"
           >
-            <Menu size={18} />
+            <Menu size={20} />
           </button>
           <div className="main-topbar-copy">
-            <span>Painel administrativo</span>
-            <strong>
-              {currentSection}
-              {selectedSite ? ` · ${selectedSite.nome}` : ""}
-            </strong>
+            <strong className="main-topbar-title">{currentSection}</strong>
           </div>
         </div>
-        {children}
+        <div className="main-content">{children}</div>
       </main>
     </div>
   );

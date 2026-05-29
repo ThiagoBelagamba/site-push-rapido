@@ -7,7 +7,6 @@ import {
   Bell,
   Edit2,
   Globe,
-  Image as ImageIcon,
   Monitor,
   Plus,
   Search,
@@ -285,20 +284,19 @@ export default function Campanhas() {
     router.push("/campanhas");
   }
 
-  if (sitesLoading || loading) return <div className="loading">Carregando...</div>;
+  if (sitesLoading || loading) return <div className="ui-loading">Carregando...</div>;
   if (!selectedSiteId) {
     return (
-      <div className="page">
+      <div className="ui-page ui-empty">
         <div className="banner-warn">
-          Nenhum site selecionado. Abra <a href="/sites">Sites</a> para escolher o site que receberá
-          as campanhas.
+          Nenhum site selecionado. Abra <a href="/sites">Sites</a> para escolher um site.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page animate-in fade-in">
+    <div className={`ui-page ui-page-wide animate-in fade-in`}>
       {health && !health.all_ok && (
         <div className="banner-error">
           {health.message ?? "Alguns serviços essenciais estão indisponíveis. Revise a infraestrutura antes de disparar campanhas."}
@@ -309,63 +307,54 @@ export default function Campanhas() {
 
       {!isComposer ? (
         <div>
-          <section className="page-hero">
-            <div className="page-hero-stack">
-              <div>
-                <span className="eyebrow">Campanhas</span>
-                <h1 className="page-title">Campanhas e jornadas de envio</h1>
-                <p className="page-desc">
-                  Organize rascunhos, valide testes e acompanhe campanhas enviadas com uma operação
-                  mais clara em desktop e mobile.
-                </p>
-                <p className="hint" style={{ marginTop: 12 }}>
-                  Site ativo: <strong>{selectedSite?.nome ?? site?.nome ?? "Selecionado"}</strong>
-                </p>
-              </div>
-              <div className="hero-badges">
-                <div className="hero-chip light">
-                  <Send size={16} />
-                  <span>{formatNumber(sentCount)} campanhas enviadas</span>
-                </div>
-                <div className="hero-chip light">
-                  <Edit2 size={16} />
-                  <span>{formatNumber(draftCount)} rascunhos em andamento</span>
-                </div>
-                <div className="hero-chip light">
-                  <Users size={16} />
-                  <span>{formatNumber(activeCount)} usuários ativos</span>
-                </div>
-              </div>
+          <header className="ui-header">
+            <h1 className="ui-title">Campanhas</h1>
+            <div className="ui-header-actions">
+              <button type="button" onClick={() => openComposer()} className="btn btn-primary">
+                <Plus size={16} />
+                <span>Nova Push</span>
+              </button>
             </div>
-            <button type="button" onClick={() => openComposer()} className="btn btn-primary">
-              <Plus size={16} />
-              <span>Nova campanha</span>
-            </button>
-          </section>
+          </header>
 
-          <section className="panel panel-table">
-            <div className="messages-toolbar">
-              <div className="messages-tabs">
+          <div className="ui-summary">
+            <div className="ui-chip">
+              <Send size={16} />
+              <span>{formatNumber(sentCount)} enviadas</span>
+            </div>
+            <div className="ui-chip">
+              <Edit2 size={16} />
+              <span>{formatNumber(draftCount)} rascunhos</span>
+            </div>
+            <div className="ui-chip">
+              <Users size={16} />
+              <span>{formatNumber(activeCount)} ativos</span>
+            </div>
+          </div>
+
+          <section className="ui-section">
+            <div className="ui-toolbar">
+              <div className="ui-inline-tabs">
                 <button
                   type="button"
                   onClick={() => setActiveTab("sent")}
-                  className={`messages-tab${activeTab === "sent" ? " active" : ""}`}
+                  className={`ui-inline-tab${activeTab === "sent" ? " active" : ""}`}
                 >
                   Enviadas
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("drafts")}
-                  className={`messages-tab${activeTab === "drafts" ? " active" : ""}`}
+                  className={`ui-inline-tab${activeTab === "drafts" ? " active" : ""}`}
                 >
                   Rascunhos
                 </button>
               </div>
-              <div className="toolbar-search toolbar-search-compact">
+              <div className="ui-search">
                 <Search size={16} />
                 <input
                   type="text"
-                  placeholder="Pesquisar por título ou conteúdo"
+                  placeholder="Buscar campanha"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -373,10 +362,10 @@ export default function Campanhas() {
             </div>
 
             {filteredCampaigns.length === 0 ? (
-              <div className="table-empty">Nenhuma campanha encontrada com os filtros atuais.</div>
+              <div className="empty">Nenhuma campanha encontrada.</div>
             ) : (
               <>
-                <div className="messages-desktop-table">
+                <div className="ui-table-wrap messages-desktop-table">
                   <table className="table">
                     <thead>
                       <tr>
@@ -516,89 +505,55 @@ export default function Campanhas() {
         </div>
       ) : (
         <div>
-          <section className="page-hero">
-            <div className="page-hero-stack">
-              <div>
-                <span className="eyebrow">Composer</span>
-                <h1 className="page-title">{editingId ? "Editar campanha" : "Nova campanha push"}</h1>
-                <p className="page-desc">
-                  Monte o conteúdo, valide o destino do clique e salve o rascunho antes de testar ou
-                  enviar para a base ativa.
-                </p>
-                <p className="hint" style={{ marginTop: 12 }}>
-                  Site ativo: <strong>{selectedSite?.nome ?? site?.nome ?? "Selecionado"}</strong>
-                </p>
-              </div>
-              <div className="hero-badges">
-                <div className="hero-chip light">
-                  <Users size={16} />
-                  <span>{formatNumber(activeCount)} usuários ativos</span>
-                </div>
-                <div className="hero-chip light">
-                  <Bell size={16} />
-                  <span>{editingId ? "Rascunho pronto para revisão" : "Salve para liberar envio e teste"}</span>
-                </div>
-              </div>
-            </div>
-            <div className="hero-actions">
+          <header className="ui-header">
+            <h1 className="ui-title">{editingId ? "Editar campanha" : "Nova Push"}</h1>
+            <div className="ui-header-actions">
               <button type="button" onClick={goBackToMessages} className="btn btn-ghost">
-                Voltar para campanhas
+                Voltar
               </button>
             </div>
-          </section>
+          </header>
 
-          <div className="composer-two-column">
+          <div className="ui-composer-grid">
             <div className="composer-main-column">
-              <div className="section-card">
-                <div className="section-card-header">
-                  <h2>1. Audiência</h2>
-                </div>
-                <div className="section-card-body">
-                  <div className="audience-pill">
-                    <div className="audience-pill-dot" />
-                    <div>
-                      <p>Enviar para usuários ativos</p>
-                      <span>
-                        Aproximadamente {formatNumber(activeCount)} destinatários em{" "}
-                        {selectedSite?.nome ?? site?.nome ?? "site ativo"}
-                      </span>
-                    </div>
+              <section className="ui-section">
+                <h3 className="ui-section-label">Audiência</h3>
+                <div className="ui-audience-pill">
+                  <div className="ui-audience-pill-dot" />
+                  <div>
+                    <p>Usuários ativos</p>
+                    <span>{formatNumber(activeCount)} destinatários</span>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <form onSubmit={handleSave} className="form">
-                <div className="section-card">
-                  <div className="section-card-header">
-                    <h2>2. Mensagem</h2>
-                  </div>
-                  <div className="section-card-body section-card-stack">
-                    <label>
+              <form onSubmit={handleSave} className="ui-stack">
+                <section className="ui-section">
+                  <h3 className="ui-section-label">Mensagem</h3>
+                  <div className="ui-stack">
+                    <label className="ui-field-group">
                       <span className="field-label">Título</span>
                       <input
                         type="text"
                         value={titulo}
                         onChange={(e) => setTitulo(e.target.value)}
-                        placeholder="Título da Notificação"
+                        placeholder="Título da notificação"
                         maxLength={150}
                         required
                       />
                     </label>
-                    <label>
+                    <label className="ui-field-group">
                       <span className="field-label">Mensagem</span>
                       <textarea
                         value={mensagem}
                         onChange={(e) => setMensagem(e.target.value)}
                         rows={3}
-                        placeholder="Digite o corpo da mensagem..."
+                        placeholder="Corpo da mensagem"
                         required
                       />
                     </label>
-                    <label>
-                      <span className="field-label field-label-inline">
-                        <ImageIcon size={14} />
-                        <span>URL da Imagem / Ícone (Opcional)</span>
-                      </span>
+                    <label className="ui-field-group">
+                      <span className="field-label">Ícone (opcional)</span>
                       <input
                         type="url"
                         value={iconeUrl}
@@ -607,30 +562,23 @@ export default function Campanhas() {
                       />
                     </label>
                   </div>
-                </div>
+                </section>
 
-                <div className="section-card">
-                  <div className="section-card-header">
-                    <h2>3. Ação ao Clicar</h2>
-                  </div>
-                  <div className="section-card-body">
-                    <label>
-                      <span className="field-label">URL de Lançamento</span>
-                      <p className="field-help">
-                        Para onde o usuário deve ir ao clicar na notificação.
-                      </p>
-                      <input
-                        type="url"
-                        value={urlDestino}
-                        onChange={(e) => setUrlDestino(e.target.value)}
-                        placeholder="https://meusite.com/promocao"
-                        required
-                      />
-                    </label>
-                  </div>
-                </div>
+                <section className="ui-section">
+                  <h3 className="ui-section-label">Ação ao clicar</h3>
+                  <label className="ui-field-group">
+                    <span className="field-label">URL de destino</span>
+                    <input
+                      type="url"
+                      value={urlDestino}
+                      onChange={(e) => setUrlDestino(e.target.value)}
+                      placeholder="https://meusite.com/promocao"
+                      required
+                    />
+                  </label>
+                </section>
 
-                <div className="composer-bottom-bar">
+                <div className="ui-actions composer-bottom-bar">
                   <button type="button" onClick={goBackToMessages} className="btn btn-ghost">
                     Voltar
                   </button>
@@ -656,7 +604,7 @@ export default function Campanhas() {
             </div>
 
             <div className="composer-preview-column">
-              <div className="section-card preview-shell">
+              <section className="ui-section preview-shell">
                 <div className="preview-selector">
                   <button
                     type="button"
@@ -734,7 +682,7 @@ export default function Campanhas() {
                     </div>
                   ) : null}
                 </div>
-              </div>
+              </section>
             </div>
           </div>
         </div>
@@ -748,8 +696,8 @@ export default function Campanhas() {
               Enviar esta campanha para <strong>{formatNumber(activeCount)}</strong> inscrito
               {activeCount !== 1 ? "s" : ""} ativo{activeCount !== 1 ? "s" : ""}?
             </p>
-            <p className="hint">Esta ação não pode ser desfeita. Inscritos inativos serão ignorados.</p>
-            <div className="form-actions">
+            <p className="hint">Inscritos inativos serão ignorados.</p>
+            <div className="ui-actions">
               <button type="button" className="btn" onClick={() => setShowSendModal(false)}>
                 Cancelar
               </button>
